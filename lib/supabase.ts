@@ -15,13 +15,52 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase URL or Anon Key is missing. Make sure you have set the environment variables correctly.")
 }
 
-// 서버 컴포넌트에서 사용할 수 있도록 설정 개선
-export const supabase = createClient(supabaseUrl || "", supabaseAnonKey || "", {
-  auth: {
-    persistSession: false, // SSR에서 문제 방지
-    autoRefreshToken: false, // 서버 컴포넌트에서는 불필요
-  },
-})
+// Modify the client creation code to check for environment variables and provide better error handling
+export const supabase = (() => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase URL or Anon Key is missing. Make sure you have set the environment variables correctly.")
+
+    // In development, return a mock client that logs operations instead of failing
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Using mock Supabase client for development. API calls will be logged but not executed.")
+      return {
+        from: () => ({
+          select: () => {
+            console.log("Mock Supabase select operation")
+            return { data: [], error: null }
+          },
+          insert: () => {
+            console.log("Mock Supabase insert operation")
+            return { data: null, error: null }
+          },
+          update: () => {
+            console.log("Mock Supabase update operation")
+            return { data: null, error: null }
+          },
+          delete: () => {
+            console.log("Mock Supabase delete operation")
+            return { data: null, error: null }
+          },
+        }),
+        auth: {
+          getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+          getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+          signOut: () => Promise.resolve({ error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        rpc: () => Promise.resolve({ data: null, error: null }),
+      }
+    }
+  }
+
+  // Only create the real client if we have the required environment variables
+  return createClient(supabaseUrl || "", supabaseAnonKey || "", {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
+})()
 
 // 연결 테스트 함수
 export async function testSupabaseConnection() {
