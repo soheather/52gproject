@@ -64,13 +64,34 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
   const hoverEffect = hoverEffects[colorIndex]
 
   // 요청 번호 계산
+  // 요청 번호 계산 - 서버에서 가져온 실제 순서 사용
   useEffect(() => {
-    // UUID의 첫 번째 문자를 숫자로 변환하여 요청 번호로 사용
-    if (typeof request.id === "string") {
-      const firstChar = request.id.charAt(0)
-      const charCode = firstChar.charCodeAt(0)
-      setRequestNumber((charCode % 100) + 1) // 1~100 사이의 숫자로 변환
+    const getRequestNumber = async () => {
+      try {
+        // 모든 도움 요청을 생성일 기준으로 정렬하여 가져옴
+        const { data, error } = await supabase
+          .from(HELP_REQUESTS_TABLE)
+          .select("id")
+          .order("created_at", { ascending: true })
+
+        if (error || !data) {
+          console.error("도움 요청 순서 오류:", error)
+          return
+        }
+
+        // 현재 ID의 인덱스 찾기
+        const index = data.findIndex((item) => item.id === request.id)
+
+        // 인덱스가 유효하면 1부터 시작하는 순서 반환
+        if (index >= 0) {
+          setRequestNumber(index + 1)
+        }
+      } catch (err) {
+        console.error("요청 번호 계산 오류:", err)
+      }
     }
+
+    getRequestNumber()
   }, [request.id])
 
   // 마운트 및 정렬 시 애니메이션 효과
@@ -156,11 +177,10 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
 
         <p className="flex-grow mb-4 whitespace-pre-wrap text-sm leading-relaxed font-medium">{request.content}</p>
 
-        <div className="flex justify-between items-center text-xs opacity-80 mt-auto pt-2 border-t border-white border-opacity-20">
+        <div className="flex justify-end items-center text-xs opacity-80 mt-auto pt-2 border-t border-white border-opacity-20">
           <div className="flex items-center gap-2">
             <span className="font-bold">{formatDate(request.created_at)}</span>
           </div>
-          <div className="font-bold">{request.author || "익명"}</div>
         </div>
       </div>
     </div>

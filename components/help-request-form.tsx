@@ -70,7 +70,7 @@ export function HelpRequestForm() {
             content,
             emoji,
             author: "익명",
-            views: Math.floor(Math.random() * 20),
+            views: 0,
             likes: 0,
           },
         ])

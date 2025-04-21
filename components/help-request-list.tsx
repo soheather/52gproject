@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-import { MessageCircle, Loader2, RefreshCw, Clock, ThumbsUp } from "lucide-react"
+import { MessageCircle, Loader2, RefreshCw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ko } from "date-fns/locale"
 import { HelpRequestCard } from "./help-request-card"
@@ -25,7 +25,7 @@ export function HelpRequestList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isTableReady, setIsTableReady] = useState(false)
-  const [sortOption, setSortOption] = useState<SortOption>("latest")
+  const [sortOption] = useState<SortOption>("latest")
   const [isSorting, setIsSorting] = useState(false)
 
   // 도움 요청 목록 로드
@@ -42,7 +42,7 @@ export function HelpRequestList() {
         throw new Error("도움 요청 테이블이 존재하지 않습니다.")
       }
 
-      // Supabase에서 데이터 가져오기
+      // Supabase에서 데이터 가져오기 - 테스트 데이터 제외하고 실제 데이터만 가져오기
       const { data, error } = await supabase
         .from(HELP_REQUESTS_TABLE)
         .select("*")
@@ -52,6 +52,7 @@ export function HelpRequestList() {
         throw error
       }
 
+      // 실제 데이터만 설정 (테스트 데이터 제외)
       setRequests(data || [])
     } catch (error) {
       console.error("도움 요청 목록 로드 오류:", error)
@@ -78,23 +79,11 @@ export function HelpRequestList() {
   }, [])
 
   // 정렬 함수
-  const sortRequests = (option: SortOption) => {
+  const sortRequests = () => {
     setIsSorting(true)
-    setSortOption(option)
 
     const sortedRequests = [...requests]
-
-    switch (option) {
-      case "latest":
-        sortedRequests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        break
-      case "oldest":
-        sortedRequests.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        break
-      case "popular":
-        sortedRequests.sort((a, b) => (b.likes || 0) - (a.likes || 0))
-        break
-    }
+    sortedRequests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     // 약간의 지연 후 정렬된 결과 적용 (애니메이션 효과를 위해)
     setTimeout(() => {
@@ -111,6 +100,8 @@ export function HelpRequestList() {
       return "날짜 정보 없음"
     }
   }
+
+  const hasRequests = requests.length > 0
 
   if (loading) {
     return (
@@ -133,7 +124,7 @@ export function HelpRequestList() {
     )
   }
 
-  if (requests.length === 0) {
+  if (!hasRequests) {
     return (
       <div className="text-center py-12 bg-[#f1f1f5] rounded-xl shadow-sm">
         <MessageCircle className="h-12 w-12 text-[#6366f1] mx-auto mb-4" />
@@ -145,40 +136,6 @@ export function HelpRequestList() {
 
   return (
     <div className="space-y-4">
-      {/* 정렬 옵션 버튼 */}
-      <div className="flex justify-end gap-2 mb-4">
-        <Button
-          variant={sortOption === "latest" ? "default" : "outline"}
-          size="sm"
-          onClick={() => sortRequests("latest")}
-          className={`${sortOption === "latest" ? "bg-[#6366f1] hover:bg-[#5258e0]" : ""}`}
-          disabled={isSorting}
-        >
-          <Clock className="h-4 w-4 mr-2" />
-          최신순
-        </Button>
-        <Button
-          variant={sortOption === "oldest" ? "default" : "outline"}
-          size="sm"
-          onClick={() => sortRequests("oldest")}
-          className={`${sortOption === "oldest" ? "bg-[#6366f1] hover:bg-[#5258e0]" : ""}`}
-          disabled={isSorting}
-        >
-          <Clock className="h-4 w-4 mr-2" />
-          오래된순
-        </Button>
-        <Button
-          variant={sortOption === "popular" ? "default" : "outline"}
-          size="sm"
-          onClick={() => sortRequests("popular")}
-          className={`${sortOption === "popular" ? "bg-[#6366f1] hover:bg-[#5258e0]" : ""}`}
-          disabled={isSorting}
-        >
-          <ThumbsUp className="h-4 w-4 mr-2" />
-          인기순
-        </Button>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
         {requests.map((request, index) => (
           <HelpRequestCard
