@@ -61,9 +61,25 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
   const [error, setError] = useState<string | null>(null)
 
   // 상태 변수 추가
-  const [showPlanningProjects, setShowPlanningProjects] = useState(false)
-  const [showInProgressProjects, setShowInProgressProjects] = useState(false)
-  const [showCompletedProjects, setShowCompletedProjects] = useState(false)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  // 카드 클릭 핸들러 함수를 수정합니다:
+  const handleCategoryClick = (category: string) => {
+    // 이미 활성화된 카테고리를 다시 클릭하면 닫히도록 토글 기능 추가
+    if (activeCategory === category) {
+      setActiveCategory(null)
+    } else {
+      setActiveCategory(category)
+    }
+  }
+
+  // 전체 프로젝트 카드 클릭 핸들러 추가
+  const handleAllProjectsClick = () => {
+    // 모든 카테고리 비활성화하여 초기 화면으로 돌아가기
+    setActiveCategory(null)
+    // 검색어도 초기화
+    setSearchTerm("")
+  }
 
   // Notion 데이터 처리
   useEffect(() => {
@@ -505,7 +521,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     // 전체 프로젝트 수
     const totalProjects = projects.length
 
-    // 진행보류/진행후보/진행확정 프로젝트 필터링
+    // 진행보류/진행후보/진행확정 프로젝트 필터링 - 통합된 카테고리
     const planningProjectsList = projects.filter(
       (project) =>
         project.stage.includes("진행보류") ||
@@ -716,7 +732,10 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     <div className="space-y-6">
       {/* 프로젝트 현황 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-6 flex items-center">
+        <div
+          className="bg-white rounded-xl shadow-sm p-6 flex items-center cursor-pointer hover:bg-[#f8f8fc] transition-colors"
+          onClick={handleAllProjectsClick}
+        >
           <div className="rounded-full bg-[#f0f0ff] p-3 mr-4">
             <BarChart3 className="h-6 w-6 text-[#7b7bf7]" />
           </div>
@@ -728,20 +747,20 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
         <div
           className="bg-white rounded-xl shadow-sm p-6 flex items-center cursor-pointer hover:bg-[#f8f8fc] transition-colors"
-          onClick={() => setShowPlanningProjects(!showPlanningProjects)}
+          onClick={() => handleCategoryClick("planning")}
         >
           <div className="rounded-full bg-[#fff2c4] bg-opacity-50 p-3 mr-4">
             <Clock className="h-6 w-6 text-[#a17f22]" />
           </div>
           <div>
-            <p className="text-[#6e6e85] text-sm">진행보류</p>
+            <p className="text-[#6e6e85] text-sm">진행보류/후보/확정</p>
             <p className="text-2xl font-bold text-[#2d2d3d]">{projectStats.planningProjects}개</p>
           </div>
         </div>
 
         <div
           className="bg-white rounded-xl shadow-sm p-6 flex items-center cursor-pointer hover:bg-[#f8f8fc] transition-colors"
-          onClick={() => setShowInProgressProjects(!showInProgressProjects)}
+          onClick={() => handleCategoryClick("inProgress")}
         >
           <div className="rounded-full bg-[#c5e8ff] bg-opacity-50 p-3 mr-4">
             <ListChecks className="h-6 w-6 text-[#3a6ea5]" />
@@ -754,7 +773,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
         <div
           className="bg-white rounded-xl shadow-sm p-6 flex items-center cursor-pointer hover:bg-[#f8f8fc] transition-colors"
-          onClick={() => setShowCompletedProjects(!showCompletedProjects)}
+          onClick={() => handleCategoryClick("completed")}
         >
           <div className="rounded-full bg-[#e1f5c4] bg-opacity-50 p-3 mr-4">
             <CheckCircle2 className="h-6 w-6 text-[#5a7052]" />
@@ -766,12 +785,12 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
         </div>
       </div>
 
-      {showPlanningProjects && projectStats.planningProjectsList.length > 0 && (
+      {activeCategory === "planning" && projectStats.planningProjectsList.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <Clock className="h-5 w-5 text-[#a17f22] mr-2" />
             <h3 className="text-lg font-bold text-[#2d2d3d]">
-              진행보류 프로젝트 목록 ({projectStats.planningProjects}개)
+              진행보류/후보/확정 프로젝트 목록 ({projectStats.planningProjects}개)
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -826,7 +845,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
         </div>
       )}
 
-      {showInProgressProjects && projectStats.inProgressProjectsList.length > 0 && (
+      {activeCategory === "inProgress" && projectStats.inProgressProjectsList.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <ListChecks className="h-5 w-5 text-[#3a6ea5] mr-2" />
@@ -886,7 +905,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
         </div>
       )}
 
-      {showCompletedProjects && projectStats.completedProjectsList.length > 0 && (
+      {activeCategory === "completed" && projectStats.completedProjectsList.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <CheckCircle2 className="h-5 w-5 text-[#5a7052] mr-2" />

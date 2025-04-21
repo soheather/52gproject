@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 // 파스텔 톤 색상 정의
 const COLORS = {
-  "진행후보/확정": "#fff2c4", // 연한 노란색
+  "진행보류/후보/확정": "#fff2c4", // 연한 노란색
   진행중: "#c5e8ff", // 연한 파란색
   진행완료: "#e1f5c4", // 연한 녹색
 }
@@ -55,8 +55,8 @@ export function ProjectStageChart({ data }: ProjectStageChartProps) {
   const dividedBarData = [
     {
       name: "프로젝트 분포",
-      "진행후보/확정": data.find((item) => item.name === "진행후보/확정")?.value || 0,
-      "진행후보/확정Percentage": data.find((item) => item.name === "진행후보/확정")?.percentage || 0,
+      "진행보류/후보/확정": data.find((item) => item.name === "진행보류/후보/확정")?.value || 0,
+      "진행보류/후보/확정Percentage": data.find((item) => item.name === "진행보류/후보/확정")?.percentage || 0,
       진행중: data.find((item) => item.name === "진행중")?.value || 0,
       진행중Percentage: data.find((item) => item.name === "진행중")?.percentage || 0,
       진행완료: data.find((item) => item.name === "진행완료")?.value || 0,
@@ -105,11 +105,11 @@ export function ProjectStageChart({ data }: ProjectStageChartProps) {
           <Tooltip content={<CustomTooltip />} />
 
           {/* 진행후보/확정 */}
-          <Bar dataKey="진행후보/확정" stackId="a" fill={COLORS["진행후보/확정"]} radius={[4, 0, 0, 4]}>
+          <Bar dataKey="진행보류/후보/확정" stackId="a" fill={COLORS["진행보류/후보/확정"]} radius={[4, 0, 0, 4]}>
             <LabelList
-              dataKey="진행후보/확정Percentage"
+              dataKey="진행보류/후보/확정Percentage"
               position="center"
-              formatter={(value: number) => (value > 10 ? `${value}%` : "")}
+              formatter={(value: number) => `${value}%`}
               style={{ fill: "#4b4b63", fontWeight: "bold", fontSize: 12 }}
             />
           </Bar>
@@ -119,7 +119,7 @@ export function ProjectStageChart({ data }: ProjectStageChartProps) {
             <LabelList
               dataKey="진행중Percentage"
               position="center"
-              formatter={(value: number) => (value > 10 ? `${value}%` : "")}
+              formatter={(value: number) => `${value}%`}
               style={{ fill: "#4b4b63", fontWeight: "bold", fontSize: 12 }}
             />
           </Bar>
@@ -129,7 +129,7 @@ export function ProjectStageChart({ data }: ProjectStageChartProps) {
             <LabelList
               dataKey="진행완료Percentage"
               position="center"
-              formatter={(value: number) => (value > 10 ? `${value}%` : "")}
+              formatter={(value: number) => `${value}%`}
               style={{ fill: "#4b4b63", fontWeight: "bold", fontSize: 12 }}
             />
           </Bar>
