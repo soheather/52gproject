@@ -1003,7 +1003,9 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2d2d3d]">{project.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.stage}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.pm}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.company}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">
+                      {getCompanyBadge(project.company)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.expected_schedule}</td>
                   </tr>
                 ))}
@@ -1029,6 +1031,12 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-[#4b4b63] uppercase tracking-wider"
                   >
+                    회사
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#4b4b63] uppercase tracking-wider"
+                  >
                     프로젝트명
                   </th>
                   <th
@@ -1047,12 +1055,6 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-[#4b4b63] uppercase tracking-wider"
                   >
-                    회사
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-[#4b4b63] uppercase tracking-wider"
-                  >
                     예상 일정
                   </th>
                 </tr>
@@ -1060,10 +1062,12 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
               <tbody className="bg-white divide-y divide-gray-200">
                 {projectStats.inProgressProjectsList.map((project) => (
                   <tr key={project.id} className="hover:bg-[#f8f8fc]">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {getCompanyBadge(project.company)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2d2d3d]">{project.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.stage}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.pm}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.company}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.expected_schedule}</td>
                   </tr>
                 ))}
@@ -1123,7 +1127,9 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2d2d3d]">{project.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.stage}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.pm}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.company}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">
+                      {getCompanyBadge(project.company)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6e6e85]">{project.expected_schedule}</td>
                   </tr>
                 ))}

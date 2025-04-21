@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Home, FileText, Menu, ListTodo } from "lucide-react"
+import { Home, FileText, Menu, ListTodo, HelpCircle } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -58,6 +58,13 @@ export function Sidebar() {
               title="프로젝트 리스트"
               href="/projects"
               active={pathname === "/projects"}
+              collapsed={collapsed}
+            />
+            <MenuItem
+              icon={<HelpCircle size={20} />}
+              title="도움 요청하기"
+              href="/help-requests"
+              active={pathname === "/help-requests"}
               collapsed={collapsed}
             />
           </ul>
