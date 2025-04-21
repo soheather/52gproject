@@ -6,9 +6,8 @@ import { AlertTriangle } from "lucide-react"
 // 상단에 RefreshProjectsButton import 추가
 import { RefreshProjectsButton } from "@/components/refresh-projects-button"
 
-// 수정된 코드:
 export const dynamic = "force-dynamic"
-export const revalidate = 300 // 5분마다 재검증
+export const revalidate = 0 // 항상 최신 데이터 가져오기
 
 export default async function ProjectsPage() {
   try {
@@ -94,7 +93,29 @@ export default async function ProjectsPage() {
       )
     }
 
-    console.log(`✅ 프로젝트 데이터 로드 완료: ${notionData.results?.length || 0}개 항목`)
+    if (notionData?.results) {
+      console.log(`✅ 프로젝트 데이터 로드 완료: ${notionData.results.length}개 항목`)
+
+      if (notionData.results.length > 0) {
+        const firstItem = notionData.results[0]
+        console.log("첫 번째 항목 속성 키:", Object.keys(firstItem.properties))
+
+        // stage 관련 키 확인
+        const stageKey = Object.keys(firstItem.properties).find(
+          (key) =>
+            key === "stage" ||
+            key === "단계" ||
+            key.toLowerCase().includes("stage") ||
+            key.toLowerCase().includes("단계"),
+        )
+
+        if (stageKey) {
+          console.log(`스테이지 키 발견: '${stageKey}'`, firstItem.properties[stageKey])
+        } else {
+          console.log("⚠️ 스테이지 관련 키를 찾을 수 없음")
+        }
+      }
+    }
 
     return (
       <main className="py-8 px-6 sm:px-8 lg:px-10">

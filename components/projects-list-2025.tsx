@@ -26,24 +26,33 @@ import {
 import { ProjectStageChart } from "./project-stage-chart"
 // 상단에 RefreshProjectsButton import 추가
 import { RefreshProjectsButton } from "@/components/refresh-projects-button"
+import { calculateChanges, type ChangeReport, type ProjectItem } from "./data-change-report"
+import { DataChangeReportInline } from "./data-change-report-inline"
 
 // ProjectItem 타입 정의 - 2025 프로젝트 리스트 구조에 맞게 업데이트
-type ProjectItem = {
-  id: string
-  title: string
-  status: string
-  stage: string
-  stage_ally: string
-  pm: string
-  company: string
-  stakeholder: string
-  training: boolean
-  genai: boolean
-  digital_output: boolean
-  expected_schedule: string
-  project_doc: string
-  created_at: string
-}
+// type ProjectItem = {
+//   id: string
+//   title: string
+//   status: string
+//   stage: string
+//   stage_ally: string
+//   pm: string
+//   company: string
+//   stakeholder: string
+//   training: boolean
+//   genai: boolean
+//   digital_output: boolean
+//   expected_schedule: string
+//   project_doc: string
+//   created_at: string
+// }
+
+// fetchNotionData 함수를 import 또는 정의합니다.
+// 기존 코드:
+// import { fetchNotionData } from "@/lib/notion" // 예시: "@/lib/notion"에서 가져오는 경우
+
+// 수정된 코드:
+import { fetchNotionData } from "@/app/actions/notion"
 
 export default function ProjectsList2025({ notionData }: { notionData: any }) {
   const [projects, setProjects] = useState<ProjectItem[]>([])
@@ -62,13 +71,8 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
   // 상태 변수 추가
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-
-  // 테이블 렌더링 최적화: 가상화 적용을 위한 준비
-  // 테이블 데이터를 페이징 처리하여 한 번에 표시할 항목 수 제한
-
-  // 페이징 관련 상태 추가
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(20) // 한 페이지당 표시할 항목 수
+  const [previousProjects, setPreviousProjects] = useState<ProjectItem[]>([])
+  const [changeReport, setChangeReport] = useState<ChangeReport | null>(null)
 
   // 카드 클릭 핸들러 함수를 수정합니다:
   const handleCategoryClick = (category: string) => {
@@ -121,6 +125,54 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
       // 첫 번째 항목의 속성 이름 로깅
       if (notionData.results.length > 0) {
         console.log("사용 가능한 속성 이름:", Object.keys(notionData.results[0].properties))
+
+        // stage 키 확인을 위한 디버깅 코드 추가
+        console.log("=== STAGE 키 디버깅 시작 ===")
+        const firstItem = notionData.results[0]
+
+        // 정확히 'stage'라는 이름의 속성이 있는지 확인
+        if (firstItem.properties.stage) {
+          console.log("정확한 'stage' 키 존재:", firstItem.properties.stage)
+          console.log("stage 값:", firstItem.properties.stage.select?.name)
+        } else {
+          console.log("정확한 'stage' 키가 없음")
+        }
+
+        // 정확히 '단계'라는 이름의 속성이 있는지 확인
+        if (firstItem.properties["단계"]) {
+          console.log("정확한 '단계' 키 존재:", firstItem.properties["단계"])
+          console.log("단계 값:", firstItem.properties["단계"].select?.name)
+        } else {
+          console.log("정확한 '단계' 키가 없음")
+        }
+
+        // 대소문자 구분 없이 'stage' 또는 '단계'와 유사한 키 찾기
+        const stageKeys = Object.keys(firstItem.properties).filter(
+          (key) =>
+            key.toLowerCase().includes("stage") ||
+            key.toLowerCase().includes("단계") ||
+            key.toLowerCase().includes("상태"),
+        )
+
+        if (stageKeys.length > 0) {
+          console.log("유사한 stage 키:", stageKeys)
+          stageKeys.forEach((key) => {
+            console.log(`키 '${key}'의 값:`, firstItem.properties[key])
+            if (firstItem.properties[key].type === "select") {
+              console.log(`키 '${key}'의 select 값:`, firstItem.properties[key].select?.name)
+            }
+          })
+        } else {
+          console.log("유사한 stage 키가 없음")
+        }
+
+        // 모든 select 타입 속성 확인
+        const selectProps = Object.entries(firstItem.properties)
+          .filter(([_, value]) => value.type === "select")
+          .map(([key, value]) => ({ key, value: value.select?.name }))
+
+        console.log("모든 select 타입 속성:", selectProps)
+        console.log("=== STAGE 키 디버깅 끝 ===")
       }
 
       // Notion API 응답 데이터 처리 - 2025 프로젝트 리스트 구조에 맞게 업데이트
@@ -131,31 +183,85 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
         // 수정된 코드:
         const stageValue = (() => {
+          // 모든 속성 이름과 값을 로깅하여 디버깅
+          console.log(`항목 ID: ${item.id}, 모든 속성 이름:`, Object.keys(item.properties))
+          console.log(
+            `항목 ID: ${item.id}, 모든 속성 타입:`,
+            Object.entries(item.properties)
+              .map(([key, value]) => `${key}: ${value.type}`)
+              .join(", "),
+          )
+
           // 1. 정확한 속성 이름으로 직접 찾기
-          if (item.properties["단계"]?.select?.name) {
-            return item.properties["단계"].select.name
+          const exactMatch = Object.entries(item.properties).find(([key]) => key === "단계" || key === "stage")
+
+          if (exactMatch) {
+            const [key, value] = exactMatch
+            console.log(`항목 ID: ${item.id}, 정확한 속성 찾음: ${key}`, value)
+            console.log(`항목 ID: ${item.id}, 정확한 속성 타입: ${value.type}`)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+              return value.select.name
+            } else {
+              console.log(`항목 ID: ${item.id}, ${key} 속성은 select 타입이 아니거나 값이 없음. 타입: ${value.type}`)
+            }
+          } else {
+            console.log(`항목 ID: ${item.id}, 정확한 '단계' 또는 'stage' 속성을 찾을 수 없음`)
           }
 
-          if (item.properties["stage"]?.select?.name) {
-            return item.properties["stage"].select.name
-          }
+          // 2. 대소문자 구분 없이 찾기
+          const caseInsensitiveMatch = Object.entries(item.properties).find(
+            ([key]) => key.toLowerCase() === "단계" || key.toLowerCase() === "stage",
+          )
 
-          // 2. 대소문자 구분 없이 찾기 - 최적화된 방식
-          for (const [key, value] of Object.entries(item.properties)) {
-            if (
-              (key.toLowerCase() === "단계" || key.toLowerCase() === "stage") &&
-              value.type === "select" &&
-              value.select?.name
-            ) {
+          if (caseInsensitiveMatch) {
+            const [key, value] = caseInsensitiveMatch
+            console.log(`항목 ID: ${item.id}, 대소문자 구분 없이 속성 찾음: ${key}`, value)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
               return value.select.name
             }
           }
 
+          // 3. 유사한 속성 이름 찾기 (추가 검색)
+          const similarMatch = Object.entries(item.properties).find(
+            ([key]) =>
+              key.toLowerCase().includes("단계") ||
+              key.toLowerCase().includes("stage") ||
+              key.toLowerCase().includes("상태") ||
+              key.toLowerCase().includes("status"),
+          )
+
+          if (similarMatch) {
+            const [key, value] = similarMatch
+            console.log(`항목 ID: ${item.id}, 유사한 속성 찾음: ${key}`, value)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+              return value.select.name
+            }
+          }
+
+          // 4. 모든 select 타입 속성 확인
+          const allSelectProperties = Object.entries(item.properties).filter(
+            ([_, value]) => value.type === "select" && value.select?.name,
+          )
+
+          if (allSelectProperties.length > 0) {
+            console.log(
+              `항목 ID: ${item.id}, 모든 select 타입 속성:`,
+              allSelectProperties.map(([key, value]) => `${key}: ${value.select.name}`).join(", "),
+            )
+          }
+
+          console.log(`항목 ID: ${item.id}, 단계 속성 값을 찾을 수 없음`)
           return "-"
         })()
 
         // 디버깅 로그 추가
-        // console.log(`항목 ID: ${item.id}, 단계 값: ${stageValue}`)
+        console.log(`항목 ID: ${item.id}, 단계 값: ${stageValue}`)
 
         return {
           id: item.id || `id-${Math.random().toString(36).substr(2, 9)}`,
@@ -177,11 +283,20 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
       })
 
       setProjects(processedData)
-      // console.log(`프로젝트 데이터 처리 완료: ${processedData.length}개 항목}`)
+      console.log(`프로젝트 데이터 처리 완료: ${processedData.length}개 항목`)
+
+      // 이전 데이터와 비교하여 변경 사항 계산
+      if (previousProjects.length > 0) {
+        const report = calculateChanges(previousProjects, processedData)
+        setChangeReport(report)
+      }
+
+      // 현재 데이터를 이전 데이터로 저장
+      setPreviousProjects(processedData)
 
       // 단계 값 로깅
-      // const stageValues = processedData.map((p) => p.stage).filter((s) => s !== "-")
-      // console.log("단계 값 목록:", stageValues)
+      const stageValues = processedData.map((p) => p.stage).filter((s) => s !== "-")
+      console.log("단계 값 목록:", stageValues)
     } catch (error) {
       console.error("프로젝트 데이터 처리 오류:", error)
       setError(`데이터 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`)
@@ -191,50 +306,126 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     }
   }, [notionData])
 
-  // 데이터 새로고침 함수
+  // 페이지 로드 시 자동으로 데이터 새로고침
+  useEffect(() => {
+    // 페이지 로드 시 이전 데이터가 있으면 변경 사항 계산
+    const storedData = localStorage.getItem("previousProjects")
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData) as ProjectItem[]
+        setPreviousProjects(parsedData)
+
+        // 현재 데이터와 이전 데이터 비교
+        if (projects.length > 0) {
+          const report = calculateChanges(parsedData, projects)
+          setChangeReport(report)
+        }
+      } catch (error) {
+        console.error("이전 데이터 파싱 오류:", error)
+      }
+    }
+
+    // 현재 데이터를 로컬 스토리지에 저장
+    if (projects.length > 0) {
+      localStorage.setItem("previousProjects", JSON.stringify(projects))
+    }
+  }, [projects])
+
   // refreshData 함수를 수정하여 페이지 새로고침 대신 데이터만 새로고침하도록 변경
   const refreshData = async () => {
     try {
       setRefreshing(true)
       setError(null)
 
-      // 페이지 새로고침 대신 Notion API에서 최신 데이터 가져오기
-      // const freshData = await fetchNotionData({
-      //   forceRefresh: true,
-      //   databaseId: process.env.NOTION_DATABASE_ID_PROJECTS,
-      // })
+      // 서버 액션을 통해 최신 데이터 가져오기
+      const freshData = await fetchNotionData({
+        forceRefresh: true,
+        databaseId: process.env.NOTION_DATABASE_ID_PROJECTS,
+      })
 
-      // if (freshData.error) {
-      //   setError(freshData.error)
-      //   return
-      // }
+      if (freshData.error) {
+        setError(freshData.error)
+        return
+      }
 
-      // // 타임스탬프 업데이트
-      // setLastUpdated(new Date().toLocaleString("ko-KR"))
+      // 타임스탬프 업데이트
+      setLastUpdated(new Date().toLocaleString("ko-KR"))
 
-      // // 새로운 데이터 처리
-      // const processedData = freshData.results.map((item: any) => {
-      //   return {
-      //     id: item.id || `id-${Math.random().toString(36).substr(2, 9)}`,
-      //     title: getPropertyValue(item, "title") || "제목 없음",
-      //     status: getPropertyValue(item, "status") || "미정",
-      //     stage: getPropertyValue(item, "stage") || "-",
-      //     stage_ally: getPropertyValue(item, "stage_ally") || "-",
-      //     pm: getPropertyValue(item, "pm") || "-",
-      //     company: getPropertyValue(item, "company") || "-",
-      //     stakeholder: getPropertyValue(item, "stakeholder") || "-",
-      //     training: getPropertyBooleanValue(item, "training"),
-      //     genai: getPropertyBooleanValue(item, "genai"),
-      //     digital_output: getPropertyBooleanValue(item, "digital_output"),
-      //     expected_schedule: formatDateRange(getPropertyValue(item, "expected_schedule")) || "-",
-      //     project_doc: getPropertyValue(item, "project_doc") || "",
-      //     created_at: formatDate(item.created_time) || "-",
-      //   }
-      // })
+      // 새로운 데이터 처리
+      const processedData = freshData.results.map((item: any) => {
+        // 단계 속성 특별 처리
+        const stageValue = (() => {
+          // 1. 정확한 속성 이름으로 직접 찾기
+          const exactMatch = Object.entries(item.properties).find(([key]) => key === "단계" || key === "stage")
 
-      // setProjects(processedData)
-      // console.log(`프로젝트 데이터 새로고침 완료: ${processedData.length}개 항목`)
-      window.location.reload()
+          if (exactMatch) {
+            const [key, value] = exactMatch
+            if (value.type === "select" && value.select?.name) {
+              return value.select.name
+            }
+          }
+
+          // 2. 대소문자 구분 없이 찾기
+          const caseInsensitiveMatch = Object.entries(item.properties).find(
+            ([key]) => key.toLowerCase() === "단계" || key.toLowerCase() === "stage",
+          )
+
+          if (caseInsensitiveMatch) {
+            const [key, value] = caseInsensitiveMatch
+            if (value.type === "select" && value.select?.name) {
+              return value.select.name
+            }
+          }
+
+          // 3. 유사한 속성 이름 찾기
+          const similarMatch = Object.entries(item.properties).find(
+            ([key]) =>
+              key.toLowerCase().includes("단계") ||
+              key.toLowerCase().includes("stage") ||
+              key.toLowerCase().includes("상태") ||
+              key.toLowerCase().includes("status"),
+          )
+
+          if (similarMatch) {
+            const [key, value] = similarMatch
+            if (value.type === "select" && value.select?.name) {
+              return value.select.name
+            }
+          }
+
+          return "-"
+        })()
+
+        return {
+          id: item.id || `id-${Math.random().toString(36).substr(2, 9)}`,
+          title: getPropertyValue(item, "title") || getPropertyValue(item, "이름") || "제목 없음",
+          status: getPropertyValue(item, "status") || getPropertyValue(item, "상태") || "미정",
+          stage: stageValue,
+          stage_ally: getPropertyValue(item, "stage_ally") || "-",
+          pm: getPropertyValue(item, "pm") || getPropertyValue(item, "PM") || "-",
+          company: getPropertyValue(item, "company") || getPropertyValue(item, "회사") || "-",
+          stakeholder: getPropertyValue(item, "stakeholder") || getPropertyValue(item, "이해관계자") || "-",
+          training: getPropertyBooleanValue(item, "training") || getPropertyBooleanValue(item, "교육"),
+          genai: getPropertyBooleanValue(item, "genai") || getPropertyBooleanValue(item, "생성형 AI"),
+          digital_output:
+            getPropertyBooleanValue(item, "digital_output") || getPropertyBooleanValue(item, "디지털 산출물"),
+          expected_schedule: formatDateRange(getPropertyValue(item, "expected_schedule")) || "-",
+          project_doc: getPropertyValue(item, "project_doc") || "",
+          created_at: formatDate(item.created_time) || "-",
+        }
+      })
+
+      // 이전 데이터와 비교하여 변경 사항 계산
+      const report = calculateChanges(previousProjects, processedData)
+      setChangeReport(report)
+
+      // 현재 데이터를 이전 데이터로 저장
+      setPreviousProjects(processedData)
+
+      // 프로젝트 데이터 업데이트
+      setProjects(processedData)
+
+      console.log(`프로젝트 데이터 새로고침 완료: ${processedData.length}개 항목`)
     } catch (error) {
       console.error("데이터 새로고침 오류:", error)
       setError(`데이터 업데이트 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`)
@@ -274,6 +465,19 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     })
 
     setProjects(processedData)
+
+    // 이전 데이터와 비교하여 변경 사항 계산
+    const report = calculateChanges(previousProjects, processedData)
+    setChangeReport(report)
+
+    // 변경 사항이 있으면 리포트 표시
+    // if (report.added.length > 0 || report.removed.length > 0 || report.modified.length > 0) {
+    //   setShowChangeReport(true)
+    // }
+
+    // 현재 데이터를 이전 데이터로 저장
+    setPreviousProjects(processedData)
+
     setError(null)
     console.log(`프로젝트 데이터 새로고침 완료: ${processedData.length}개 항목`)
   }
@@ -302,7 +506,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
           Object.entries(item.properties).find(([key]) => key === "단계" || key.toLowerCase() === "stage")?.[1]?.select
             ?.name ?? "-"
 
-        // console.log(`항목 ID: ${item.id}, 단계 값 추출 결과: ${단계값}`)
+        console.log(`항목 ID: ${item.id}, 단계 값 추출 결과: ${단계값}`)
         return 단계값
       }
 
@@ -322,9 +526,9 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
       // 속성 추출 헬퍼 함수 (내부 함수로 분리)
       function extractPropertyValueByType(property) {
         // 디버깅 로그 추가
-        // if (propertyName.toLowerCase() === "stage" || propertyName === "단계") {
-        //   console.log(`단계 속성 데이터:`, JSON.stringify(property, null, 2))
-        // }
+        if (propertyName.toLowerCase() === "stage" || propertyName === "단계") {
+          console.log(`단계 속성 데이터:`, JSON.stringify(property, null, 2))
+        }
 
         // 속성 타입에 따라 값 추출
         switch (property.type) {
@@ -631,21 +835,6 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     return value ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-gray-300" />
   }
 
-  // 정렬된 프로젝트 목록을 메모이제이션
-  const sortedProjects = useMemo(() => getSortedProjects(), [projects, searchTerm, sortConfig])
-
-  // 페이징된 데이터 계산
-  const paginatedProjects = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedProjects.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedProjects, currentPage, itemsPerPage])
-
-  // 총 페이지 수 계산
-  const totalPages = useMemo(() => Math.ceil(sortedProjects.length / itemsPerPage), [sortedProjects, itemsPerPage])
-
-  // 프로젝트 단계 분포 데이터를 메모이제이션
-  const stageDistributionData = useMemo(() => getProjectStageDistribution(), [projectStats])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-xl shadow-sm">
@@ -705,7 +894,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
   }
 
   // 프로젝트 단계 분포 데이터 가져오기
-  // const stageDistributionData = getProjectStageDistribution()
+  const stageDistributionData = getProjectStageDistribution()
 
   return (
     <div className="space-y-6">
@@ -944,6 +1133,53 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
         </div>
       )}
 
+      {/* 데이터 변경 사항 인라인 리포트 */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <RefreshCw className="h-6 w-6 text-[#a5a6f6] mr-2" />
+            <h2 className="text-xl font-bold text-[#2d2d3d]">최근 7일간 프로젝트 업데이트 사항</h2>
+            <span className="ml-2 text-sm text-gray-500">{lastUpdated ? `(${lastUpdated} 기준)` : ""}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-[#e9e9f2] text-[#6e6e85] hover:text-[#4b4b63] bg-[#f8f8fc] hover:bg-[#f0f0f8]"
+            onClick={refreshData}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                업데이트 중...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                업데이트
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* 로딩 상태 표시 */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+            <Loader2 className="h-12 w-12 text-[#a5a6f6] animate-spin mb-3" />
+            <p className="text-lg font-medium">데이터를 불러오는 중입니다</p>
+            <p className="text-sm mt-1">잠시만 기다려주세요...</p>
+          </div>
+        ) : !changeReport ? (
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+            <AlertTriangle className="h-12 w-12 text-gray-300 mb-3" />
+            <p className="text-lg font-medium">변경 사항 데이터가 없습니다</p>
+            <p className="text-sm mt-1">데이터를 새로고침하여 변경 사항을 확인해보세요.</p>
+          </div>
+        ) : (
+          <DataChangeReportInline report={changeReport} showRemoved={false} daysAgo={7} />
+        )}
+      </div>
+
       {/* 프로젝트 단계별 분포 차트 */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center mb-6">
@@ -1083,8 +1319,8 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedProjects.length > 0 ? (
-                paginatedProjects.map((project) => (
+              {getSortedProjects().length > 0 ? (
+                getSortedProjects().map((project) => (
                   <TableRow key={project.id} className="group hover:bg-[#f8f8fc] transition-colors">
                     <TableCell className="font-medium text-[#2d2d3d]">{project.title}</TableCell>
                     <TableCell>{getStatusBadge(project.status)}</TableCell>
@@ -1139,36 +1375,9 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between p-5 border-t border-[#f0f0f5] text-sm text-[#6e6e85] bg-[#f8f8fc]">
-          <div className="flex justify-between items-center">
-            <div>
-              총 {sortedProjects.length}개 프로젝트 (전체 {projects.length}개 중)
-              {lastUpdated && <span className="ml-4">최근 업데이트: {lastUpdated}</span>}
-            </div>
-            {totalPages > 1 && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  이전
-                </Button>
-                <span>
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  다음
-                </Button>
-              </div>
-            )}
-          </div>
+        <div className="p-5 border-t border-[#f0f0f5] text-sm text-[#6e6e85] bg-[#f8f8fc]">
+          총 {getSortedProjects().length}개 프로젝트 (전체 {projects.length}개 중)
+          {lastUpdated && <span className="ml-4">최근 업데이트: {lastUpdated}</span>}
         </div>
       </div>
     </div>

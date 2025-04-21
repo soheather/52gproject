@@ -52,7 +52,7 @@ export async function fetchNotionData(options: { forceRefresh?: boolean; databas
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            page_size: 50,
+            page_size: 100,
             // 정렬 옵션은 제거 - 기본 정렬 사용
           }),
           cache: "no-store", // 항상 최신 데이터 가져오기
@@ -181,7 +181,7 @@ export async function fetchNotionData(options: { forceRefresh?: boolean; databas
         }
       }
     },
-    { forceRefresh, expiryMs: 15 * 60 * 1000 }, // 캐시 시간을 15분으로 설정
+    { forceRefresh, expiryMs: 60000 }, // 캐시 시간을 1분으로 설정
   )
 }
 

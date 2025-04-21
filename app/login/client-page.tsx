@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
-import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,39 +10,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 
+// Supabase 인증 관련 코드를 제거하고 비활성화 메시지 표시
 export default function LoginClientPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { signIn, signUp } = useAuth()
+  const [error, setError] = useState<string | null>("인증 기능이 비활성화되었습니다.")
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      await signIn(email, password)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인 중 오류가 발생했습니다.")
-    } finally {
-      setIsLoading(false)
-    }
+    setError("인증 기능이 비활성화되었습니다.")
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      await signUp(email, password)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "회원가입 중 오류가 발생했습니다.")
-    } finally {
-      setIsLoading(false)
-    }
+    setError("인증 기능이 비활성화되었습니다.")
   }
 
   return (
@@ -50,7 +32,7 @@ export default function LoginClientPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">디지털 서비스 대시보드</CardTitle>
-          <CardDescription>계정에 로그인하여 서비스를 이용하세요</CardDescription>
+          <CardDescription>인증 기능이 현재 비활성화되어 있습니다.</CardDescription>
         </CardHeader>
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -71,6 +53,7 @@ export default function LoginClientPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
@@ -89,12 +72,13 @@ export default function LoginClientPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full bg-[#a5a6f6] hover:bg-[#8384f3]" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-[#a5a6f6] hover:bg-[#8384f3]" disabled={true}>
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   로그인
                 </Button>
@@ -115,6 +99,7 @@ export default function LoginClientPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
@@ -128,13 +113,14 @@ export default function LoginClientPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled
                   />
                   <p className="text-xs text-gray-500">비밀번호는 최소 6자 이상이어야 합니다.</p>
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full bg-[#a5a6f6] hover:bg-[#8384f3]" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-[#a5a6f6] hover:bg-[#8384f3]" disabled={true}>
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   회원가입
                 </Button>

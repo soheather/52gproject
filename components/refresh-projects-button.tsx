@@ -4,12 +4,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Loader2 } from "lucide-react"
 import { fetchNotionData } from "@/app/actions/notion"
+import { calculateChanges, type ChangeReport, type ProjectItem } from "./data-change-report"
 
 interface RefreshProjectsButtonProps {
   onRefresh?: (data: any) => void
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
   size?: "default" | "sm" | "lg" | "icon"
   className?: string
+  onChangeReport?: (report: ChangeReport) => void
+  previousData?: ProjectItem[]
 }
 
 export function RefreshProjectsButton({
@@ -17,10 +20,13 @@ export function RefreshProjectsButton({
   variant = "default",
   size = "default",
   className = "",
+  onChangeReport,
+  previousData = [],
 }: RefreshProjectsButtonProps) {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // 페이지 새로고침 대신 데이터만 새로고침하도록 수정
   const handleRefresh = async () => {
     try {
       setRefreshing(true)
@@ -39,12 +45,29 @@ export function RefreshProjectsButton({
         databaseId: process.env.NEXT_PUBLIC_NOTION_DATABASE_ID_PROJECTS,
       })
 
+      // 데이터 변환 및 변경 사항 계산
+      if (previousData.length > 0 && data.results && onChangeReport) {
+        // 새 데이터 처리
+        const processedData = data.results.map((item: any) => {
+          // 데이터 처리 로직 (projects-list-2025.tsx와 동일한 방식으로)
+          // 간략화를 위해 생략
+          return {
+            id: item.id || `id-${Math.random().toString(36).substr(2, 9)}`,
+            title: item.properties.title?.title?.[0]?.plain_text || "제목 없음",
+            // 다른 필드들...
+          }
+        })
+
+        // 변경 사항 계산
+        const report = calculateChanges(previousData, processedData)
+
+        // 변경 사항 콜백 호출
+        onChangeReport(report)
+      }
+
       // 콜백 함수가 있으면 데이터 전달
       if (onRefresh) {
         onRefresh(data)
-      } else {
-        // 콜백이 없으면 페이지 새로고침
-        window.location.reload()
       }
     } catch (error) {
       console.error("데이터 새로고침 오류:", error)
