@@ -2,255 +2,338 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Bug, Database, RefreshCw } from "lucide-react"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, RefreshCw, AlertTriangle, CheckCircle, XCircle, Search } from "lucide-react"
 
 export default function DirectDebugPage() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [consoleOutput, setConsoleOutput] = useState<string[]>([])
+  const [data, setData] = useState<any>(null)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
-  const handleFetchDebugData = async () => {
+  // 캐시 초기화 함수
+  const clearCache = () => {
+    // 로컬 스토리지에서 Notion 관련 캐시 항목 삭제
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("notion-data")) {
+        localStorage.removeItem(key)
+      }
+    })
+    alert("Notion 데이터 캐시가 초기화되었습니다. 페이지를 새로고침하세요.")
+  }
+
+  // Notion API 디버그 데이터 가져오기
+  const fetchDebugData = async () => {
     try {
       setLoading(true)
       setError(null)
-      setConsoleOutput([])
-
-      // 콘솔 출력 추가
-      addConsoleOutput("Notion 직접 API 데이터 가져오는 중...")
 
       const response = await fetch("/api/test-notion-debug")
       if (!response.ok) {
-        throw new Error(`API 오류: ${response.status} ${response.statusText}`)
+        const errorText = await response.text()
+        throw new Error(`API 오류 (${response.status}): ${errorText}`)
       }
 
       const result = await response.json()
-      addConsoleOutput("직접 API 데이터 가져오기 성공")
-
-      // stage 속성 디버깅
-      if (result.stagePropertyInfo && result.stagePropertyInfo.length > 0) {
-        addConsoleOutput("--- Stage 속성 디버깅 정보 ---")
-
-        result.stagePropertyInfo.forEach((info, index) => {
-          if (info.error) {
-            addConsoleOutput(`항목 ${index + 1}: ${info.error}`)
-          } else {
-            addConsoleOutput(`항목 ${index + 1}: 속성명 "${info.propertyName}", 타입: ${info.propertyType}`)
-
-            // properties["stage"]?.select?.name 확인
-            if (info.propertyType === "select") {
-              const selectName = info.selectName
-              addConsoleOutput(`  properties["${info.propertyName}"]?.select?.name = ${selectName || "null"}`)
-            } else {
-              addConsoleOutput(`  properties["${info.propertyName}"] 타입이 select가 아님: ${info.propertyType}`)
-            }
-
-            addConsoleOutput(`  추출된 값: ${info.extractedValue || "null"}`)
-          }
-        })
-      } else {
-        addConsoleOutput("Stage 속성 정보가 없습니다.")
-      }
-
       setData(result)
+      setLastUpdated(new Date().toLocaleString("ko-KR"))
+      console.log("Notion 디버그 데이터:", result)
     } catch (err) {
-      console.error("직접 API 데이터 가져오기 오류:", err)
-      setError(err instanceof Error ? err.message : String(err))
-      addConsoleOutput(`오류 발생: ${err instanceof Error ? err.message : String(err)}`)
+      setError(`데이터 가져오기 오류: ${err instanceof Error ? err.message : String(err)}`)
+      console.error("디버그 데이터 가져오기 오류:", err)
     } finally {
       setLoading(false)
     }
   }
 
-  // 콘솔 출력 추가 함수
-  const addConsoleOutput = (message: string) => {
-    setConsoleOutput((prev) => [...prev, message])
+  // 속성 값 렌더링 함수
+  const renderPropertyValue = (value: any) => {
+    if (value === null || value === undefined) {
+      return <span className="text-gray-400">null</span>
+    }
+
+    if (typeof value === "object") {
+      return (
+        <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">{JSON.stringify(value, null, 2)}</pre>
+      )
+    }
+
+    if (typeof value === "boolean") {
+      return value ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-gray-300" />
+    }
+
+    return <span>{String(value)}</span>
   }
 
-  // 캐시 초기화 함수
-  const clearCache = () => {
-    try {
-      localStorage.clear()
-      sessionStorage.clear()
-      addConsoleOutput("로컬 스토리지와 세션 스토리지가 초기화되었습니다.")
-      addConsoleOutput("페이지를 새로고침하려면 Cmd+Shift+R(Mac) 또는 Ctrl+Shift+R(Windows)를 누르세요.")
-    } catch (err) {
-      addConsoleOutput(`캐시 초기화 중 오류 발생: ${err instanceof Error ? err.message : String(err)}`)
+  // 속성 타입에 따른 배지 색상
+  const getPropertyTypeBadge = (type: string) => {
+    switch (type) {
+      case "select":
+        return <Badge className="bg-blue-100 text-blue-800">select</Badge>
+      case "multi_select":
+        return <Badge className="bg-purple-100 text-purple-800">multi_select</Badge>
+      case "rich_text":
+        return <Badge className="bg-green-100 text-green-800">rich_text</Badge>
+      case "title":
+        return <Badge className="bg-yellow-100 text-yellow-800">title</Badge>
+      case "date":
+        return <Badge className="bg-red-100 text-red-800">date</Badge>
+      case "checkbox":
+        return <Badge className="bg-indigo-100 text-indigo-800">checkbox</Badge>
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>
     }
   }
 
+  // 속성 이름에 "stage" 또는 "단계"가 포함되어 있는지 확인
+  const isStageProperty = (propertyName: string) => {
+    const lowerName = propertyName.toLowerCase()
+    return lowerName === "stage" || lowerName === "단계" || lowerName.includes("stage") || lowerName.includes("단계")
+  }
+
+  // 모든 속성 이름을 검색하여 "stage" 또는 "단계"와 유사한 속성 찾기
+  const findSimilarStageProperties = (properties: string[]) => {
+    return properties.filter((prop) => {
+      const lowerProp = prop.toLowerCase()
+      return (
+        lowerProp.includes("stage") ||
+        lowerProp.includes("단계") ||
+        lowerProp.includes("상태") ||
+        lowerProp.includes("status") ||
+        lowerProp.includes("phase") ||
+        lowerProp.includes("step")
+      )
+    })
+  }
+
+  // 속성 이름 검색 함수
+  const searchPropertyNames = (properties: string[], searchTerm: string) => {
+    if (!searchTerm) return properties
+    const lowerSearchTerm = searchTerm.toLowerCase()
+    return properties.filter((prop) => prop.toLowerCase().includes(lowerSearchTerm))
+  }
+
+  // 검색어 상태
+  const [searchTerm, setSearchTerm] = useState("")
+
   return (
-    <main className="py-8 px-6 sm:px-8 lg:px-10">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2d2d3d]">Notion API 직접 디버깅</h1>
-          <p className="text-[#6e6e85] mt-1">Notion API 직접 호출 결과 확인</p>
-        </div>
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6">Notion API 디버깅 페이지</h1>
+      <p className="text-gray-600 mb-8">
+        이 페이지는 Notion API 연결 및 데이터 구조를 디버깅하기 위한 도구입니다. 특히 "단계" 또는 "stage" 속성을 찾는데
+        도움이 됩니다.
+      </p>
 
-        <div className="w-full max-w-4xl flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Bug className="h-5 w-5 text-[#a5a6f6]" />
-              <h2 className="text-xl font-bold text-[#2d2d3d]">Notion API 직접 호출 디버그</h2>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={clearCache}
-                variant="outline"
-                className="bg-[#fff2c4] hover:bg-[#ffe7a0] text-[#a17f22] border-[#ffe7a0]"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                캐시 초기화
-              </Button>
-              <Button onClick={handleFetchDebugData} disabled={loading} className="bg-[#a5a6f6] hover:bg-[#8384f3]">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    로딩 중...
-                  </>
-                ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Notion 데이터 디버깅
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* 콘솔 출력 영역 */}
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-lg">콘솔 출력</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-[#1e1e1e] text-white p-4 rounded-md font-mono text-sm overflow-auto max-h-[300px]">
-                {consoleOutput.length > 0 ? (
-                  consoleOutput.map((line, index) => (
-                    <div key={index} className="whitespace-pre-wrap mb-1">
-                      {line.startsWith("오류") ? (
-                        <span className="text-red-400">{line}</span>
-                      ) : line.includes("properties[") ? (
-                        <span className="text-yellow-300">{line}</span>
-                      ) : (
-                        line
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400">디버깅 버튼을 클릭하여 Notion API 데이터를 가져오세요.</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {error && (
-            <div className="bg-[#ffd6e0] border border-[#ffc2d1] rounded-lg p-4 text-[#c44f6a]">
-              <p className="font-medium">오류 발생:</p>
-              <p>{error}</p>
-            </div>
+      <div className="flex flex-wrap gap-4 mb-8">
+        <Button onClick={fetchDebugData} className="bg-[#a5a6f6] hover:bg-[#8384f3] text-white" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              데이터 가져오는 중...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Notion 데이터 디버깅
+            </>
           )}
+        </Button>
 
-          {data && (
+        <Button onClick={clearCache} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+          캐시 초기화
+        </Button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+            <h3 className="text-red-600 font-medium">오류 발생</h3>
+          </div>
+          <p className="mt-2 text-red-600">{error}</p>
+        </div>
+      )}
+
+      {data && (
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="overview">개요</TabsTrigger>
+            <TabsTrigger value="properties">속성 목록</TabsTrigger>
+            <TabsTrigger value="stage-analysis">Stage 속성 분석</TabsTrigger>
+            <TabsTrigger value="raw-data">원본 데이터</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>Notion API 직접 호출 결과</CardTitle>
+                <CardTitle>Notion 데이터 개요</CardTitle>
+                <CardDescription>{lastUpdated && `최근 업데이트: ${lastUpdated}`}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="stage">
-                  <TabsList>
-                    <TabsTrigger value="stage">Stage 속성 분석</TabsTrigger>
-                    <TabsTrigger value="properties">모든 속성</TabsTrigger>
-                    <TabsTrigger value="raw">원본 데이터</TabsTrigger>
-                  </TabsList>
+                <div className="grid gap-4">
+                  <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-medium">항목 수</span>
+                    <span>{data.count}개</span>
+                  </div>
+                  <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-medium">속성 수</span>
+                    <span>{data.properties?.length}개</span>
+                  </div>
+                  <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="font-medium">Stage 관련 속성</span>
+                    <span>
+                      {findSimilarStageProperties(data.properties || []).length > 0
+                        ? findSimilarStageProperties(data.properties || []).join(", ")
+                        : "없음"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <p className="text-sm text-gray-500">{data.success ? "API 호출 성공" : "API 호출 실패"}</p>
+              </CardFooter>
+            </Card>
+          </TabsContent>
 
-                  <TabsContent value="stage" className="mt-4">
-                    <h3 className="text-lg font-medium mb-2">
-                      Stage 속성 분석 ({data.stagePropertyInfo?.length || 0}개 항목)
-                    </h3>
-                    <div className="bg-[#f8f8fc] p-4 rounded-md overflow-auto max-h-[600px]">
-                      {data.stagePropertyInfo?.map((info, index) => (
-                        <div key={index} className="mb-6 p-4 bg-white rounded-md shadow-sm">
-                          <h4 className="font-bold text-[#2d2d3d] mb-2">항목 {index + 1}</h4>
+          <TabsContent value="properties">
+            <Card>
+              <CardHeader>
+                <CardTitle>데이터베이스 속성 목록</CardTitle>
+                <CardDescription>Notion 데이터베이스에 있는 모든 속성 목록입니다.</CardDescription>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="속성 이름 검색..."
+                    className="pl-10 pr-4 py-2 w-full border rounded-md"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  {searchPropertyNames(data.properties || [], searchTerm).map((prop, index) => (
+                    <div
+                      key={index}
+                      className={`flex justify-between p-3 rounded-lg ${
+                        isStageProperty(prop) ? "bg-yellow-50 border border-yellow-200" : "bg-gray-50"
+                      }`}
+                    >
+                      <span className="font-medium">
+                        {prop}
+                        {isStageProperty(prop) && (
+                          <Badge className="ml-2 bg-yellow-100 text-yellow-800">Stage 관련</Badge>
+                        )}
+                      </span>
+                      {data.firstItemProperties && data.firstItemProperties[prop] && (
+                        <span>{getPropertyTypeBadge(data.firstItemProperties[prop].type)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stage-analysis">
+            <Card>
+              <CardHeader>
+                <CardTitle>Stage 속성 분석</CardTitle>
+                <CardDescription>각 항목의 "stage" 또는 "단계" 속성 분석 결과입니다.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data.stagePropertyInfo && data.stagePropertyInfo.length > 0 ? (
+                  <div className="space-y-6">
+                    {data.stagePropertyInfo.map((info, index) => (
+                      <div key={index} className="border rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 p-4 border-b">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-medium">항목 ID: {info.itemId}</h3>
+                            {info.error ? (
+                              <Badge className="bg-red-100 text-red-800">오류</Badge>
+                            ) : info.hasSelectName ? (
+                              <Badge className="bg-green-100 text-green-800">값 있음</Badge>
+                            ) : (
+                              <Badge className="bg-yellow-100 text-yellow-800">값 없음</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-4">
                           {info.error ? (
-                            <div>
-                              <p className="text-red-500 mb-2">{info.error}</p>
-                              <p className="text-sm mb-2">
-                                <span className="font-medium">사용 가능한 속성:</span>{" "}
-                                {info.availableProperties?.join(", ") || "없음"}
-                              </p>
+                            <div className="text-red-600">
+                              <p className="font-medium">오류: {info.error}</p>
+                              <p className="mt-2">사용 가능한 속성:</p>
+                              <ul className="list-disc list-inside mt-1">
+                                {info.availableProperties.map((prop, i) => (
+                                  <li key={i}>{prop}</li>
+                                ))}
+                              </ul>
                             </div>
                           ) : (
-                            <div>
-                              <p className="text-sm mb-2">
-                                <span className="font-medium">속성 이름:</span> {info.propertyName}
-                              </p>
-                              <p className="text-sm mb-2">
-                                <span className="font-medium">속성 타입:</span> {info.propertyType}
-                              </p>
-                              <p className="text-sm mb-2">
-                                <span className="font-medium">select.name 존재:</span>{" "}
-                                {info.hasSelectName ? "✅ 있음" : "❌ 없음"}
-                              </p>
-                              {info.hasSelectName && (
-                                <p className="text-sm mb-2">
-                                  <span className="font-medium">select.name 값:</span>{" "}
-                                  <span className="bg-[#e1f5c4] text-[#5a7052] px-2 py-1 rounded-full text-xs">
-                                    {info.selectName}
-                                  </span>
-                                </p>
-                              )}
-                              <p className="text-sm mb-2">
-                                <span className="font-medium">추출된 값:</span>{" "}
-                                <span className="bg-[#c5e8ff] text-[#3a6ea5] px-2 py-1 rounded-full text-xs">
-                                  {info.extractedValue || "값 없음"}
-                                </span>
-                              </p>
-                              <div className="mt-2">
-                                <p className="font-medium text-sm mb-1">원본 데이터:</p>
-                                <pre className="bg-[#f8f8fc] p-2 rounded text-xs overflow-auto max-h-[200px]">
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                  <p className="text-sm text-gray-500">속성 이름</p>
+                                  <p className="font-medium">{info.propertyName}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-500">속성 타입</p>
+                                  <p>{getPropertyTypeBadge(info.propertyType)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-500">추출된 값</p>
+                                  <p className="font-medium">
+                                    {info.extractedValue ? (
+                                      info.extractedValue
+                                    ) : (
+                                      <span className="text-gray-400">없음</span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 mb-1">원본 데이터</p>
+                                <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
                                   {JSON.stringify(info.rawData, null, 2)}
                                 </pre>
                               </div>
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="properties" className="mt-4">
-                    <h3 className="text-lg font-medium mb-2">사용 가능한 속성 목록</h3>
-                    <div className="bg-[#f8f8fc] p-4 rounded-md overflow-auto max-h-[400px]">
-                      <ul className="space-y-2">
-                        {data.properties?.map((prop: string, index: number) => (
-                          <li key={index} className="flex items-center gap-2">
-                            <span className="bg-[#e9e9f2] text-[#4b4b63] px-2 py-1 rounded text-sm font-mono">
-                              {prop}
-                            </span>
-                            {prop.toLowerCase() === "stage" || prop.toLowerCase() === "단계" ? (
-                              <span className="text-green-500 text-xs">✓ 단계 속성</span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="raw" className="mt-4">
-                    <h3 className="text-lg font-medium mb-2">원본 API 응답</h3>
-                    <div className="bg-[#f8f8fc] p-4 rounded-md overflow-auto max-h-[600px]">
-                      <pre className="text-xs font-mono">{JSON.stringify(data.sample, null, 2)}</pre>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center py-8 text-gray-500">분석할 데이터가 없습니다.</p>
+                )}
               </CardContent>
             </Card>
-          )}
+          </TabsContent>
+
+          <TabsContent value="raw-data">
+            <Card>
+              <CardHeader>
+                <CardTitle>원본 데이터</CardTitle>
+                <CardDescription>Notion API에서 반환된 원본 데이터입니다. (최대 3개 항목)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto max-h-[600px]">
+                  {JSON.stringify(data.rawResults || data.sample, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {!data && !loading && !error && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-600">"Notion 데이터 디버깅" 버튼을 클릭하여 데이터를 가져오세요.</p>
         </div>
-      </div>
-    </main>
+      )}
+    </div>
   )
 }

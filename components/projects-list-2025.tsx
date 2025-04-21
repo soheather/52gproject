@@ -107,28 +107,67 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
         // const stageValue = item.properties["단계"]?.select?.name || item.properties["stage"]?.select?.name || "-"
 
         // 수정된 코드:
-        // 1. 단계 속성 추출 부분을 더 명확하게 수정
         const stageValue = (() => {
-          // 1. 먼저 정확히 "stage" 속성 확인
-          if (item.properties["stage"]?.select?.name) {
-            console.log(`항목 ID: ${item.id}, stage 속성 값: ${item.properties["stage"].select.name}`)
-            return item.properties["stage"].select.name
-          }
-          // 2. 다음으로 "단계" 속성 확인
-          else if (item.properties["단계"]?.select?.name) {
-            console.log(`항목 ID: ${item.id}, 단계 속성 값: ${item.properties["단계"].select.name}`)
-            return item.properties["단계"].select.name
-          }
-          // 3. 대소문자 구분 없이 찾기
-          else {
-            const stageKey = Object.keys(item.properties).find(
-              (key) => key.toLowerCase() === "stage" || key.toLowerCase() === "단계",
-            )
+          // 모든 속성 이름과 값을 로깅하여 디버깅
+          console.log(`항목 ID: ${item.id}, 모든 속성 이름:`, Object.keys(item.properties))
 
-            if (stageKey && item.properties[stageKey]?.select?.name) {
-              console.log(`항목 ID: ${item.id}, ${stageKey} 속성 값: ${item.properties[stageKey].select.name}`)
-              return item.properties[stageKey].select.name
+          // 1. 정확한 속성 이름으로 직접 찾기
+          const exactMatch = Object.entries(item.properties).find(([key]) => key === "단계" || key === "stage")
+
+          if (exactMatch) {
+            const [key, value] = exactMatch
+            console.log(`항목 ID: ${item.id}, 정확한 속성 찾음: ${key}`, value)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+              return value.select.name
             }
+          }
+
+          // 2. 대소문자 구분 없이 찾기
+          const caseInsensitiveMatch = Object.entries(item.properties).find(
+            ([key]) => key.toLowerCase() === "단계" || key.toLowerCase() === "stage",
+          )
+
+          if (caseInsensitiveMatch) {
+            const [key, value] = caseInsensitiveMatch
+            console.log(`항목 ID: ${item.id}, 대소문자 구분 없이 속성 찾음: ${key}`, value)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+              return value.select.name
+            }
+          }
+
+          // 3. 유사한 속성 이름 찾기 (추가 검색)
+          const similarMatch = Object.entries(item.properties).find(
+            ([key]) =>
+              key.toLowerCase().includes("단계") ||
+              key.toLowerCase().includes("stage") ||
+              key.toLowerCase().includes("상태") ||
+              key.toLowerCase().includes("status"),
+          )
+
+          if (similarMatch) {
+            const [key, value] = similarMatch
+            console.log(`항목 ID: ${item.id}, 유사한 속성 찾음: ${key}`, value)
+
+            if (value.type === "select" && value.select?.name) {
+              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+              return value.select.name
+            }
+          }
+
+          // 4. 모든 select 타입 속성 확인
+          const allSelectProperties = Object.entries(item.properties).filter(
+            ([_, value]) => value.type === "select" && value.select?.name,
+          )
+
+          if (allSelectProperties.length > 0) {
+            console.log(
+              `항목 ID: ${item.id}, 모든 select 타입 속성:`,
+              allSelectProperties.map(([key, value]) => `${key}: ${value.select.name}`).join(", "),
+            )
           }
 
           console.log(`항목 ID: ${item.id}, 단계 속성 값을 찾을 수 없음`)
@@ -278,8 +317,13 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
       // 2. 특수 케이스 처리 (stage/단계)
       if (propertyName === "stage" || propertyName === "단계") {
-        const 단계 = item.properties["단계"]?.select?.name || item.properties["stage"]?.select?.name || "-"
-        return 단계
+        // 기존 코드를 제거하고 새로운 방식으로 대체
+        const 단계값 =
+          Object.entries(item.properties).find(([key]) => key === "단계" || key.toLowerCase() === "stage")?.[1]?.select
+            ?.name ?? "-"
+
+        console.log(`항목 ID: ${item.id}, 단계 값 추출 결과: ${단계값}`)
+        return 단계값
       }
 
       // 3. 대소문자 구분 없이 속성 이름 찾기

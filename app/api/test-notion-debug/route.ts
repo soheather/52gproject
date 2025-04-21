@@ -63,56 +63,28 @@ export async function GET() {
       for (let i = 0; i < data.results.length; i++) {
         const item = data.results[i]
 
-        // stage 속성 직접 확인 (정확히 "stage"라는 이름으로)
-        if (item.properties["stage"]) {
-          const stageProperty = item.properties["stage"]
-          stagePropertyInfo.push({
-            itemId: item.id,
-            propertyName: "stage",
-            propertyType: stageProperty.type,
-            rawData: stageProperty,
-            extractedValue: extractPropertyValue(stageProperty),
-            hasSelectName: stageProperty.type === "select" && !!stageProperty.select?.name,
-            selectName: stageProperty.type === "select" ? stageProperty.select?.name : null,
-          })
-        }
-        // 단계 속성 확인 (정확히 "단계"라는 이름으로)
-        else if (item.properties["단계"]) {
-          const stageProperty = item.properties["단계"]
-          stagePropertyInfo.push({
-            itemId: item.id,
-            propertyName: "단계",
-            propertyType: stageProperty.type,
-            rawData: stageProperty,
-            extractedValue: extractPropertyValue(stageProperty),
-            hasSelectName: stageProperty.type === "select" && !!stageProperty.select?.name,
-            selectName: stageProperty.type === "select" ? stageProperty.select?.name : null,
-          })
-        }
-        // 대소문자 구분 없이 "stage" 또는 "단계"와 일치하는 속성 찾기
-        else {
-          const stagePropertyName = Object.keys(item.properties).find(
-            (key) => key.toLowerCase() === "stage" || key.toLowerCase() === "단계",
-          )
+        // 새로운 방식으로 단계 속성 찾기
+        const stageEntry = Object.entries(item.properties).find(
+          ([key]) => key === "단계" || key.toLowerCase() === "stage",
+        )
 
-          if (stagePropertyName) {
-            const stageProperty = item.properties[stagePropertyName]
-            stagePropertyInfo.push({
-              itemId: item.id,
-              propertyName: stagePropertyName,
-              propertyType: stageProperty.type,
-              rawData: stageProperty,
-              extractedValue: extractPropertyValue(stageProperty),
-              hasSelectName: stageProperty.type === "select" && !!stageProperty.select?.name,
-              selectName: stageProperty.type === "select" ? stageProperty.select?.name : null,
-            })
-          } else {
-            stagePropertyInfo.push({
-              itemId: item.id,
-              error: "stage 또는 단계 속성을 찾을 수 없음",
-              availableProperties: Object.keys(item.properties),
-            })
-          }
+        if (stageEntry) {
+          const [propertyName, propertyValue] = stageEntry
+          stagePropertyInfo.push({
+            itemId: item.id,
+            propertyName,
+            propertyType: propertyValue.type,
+            rawData: propertyValue,
+            extractedValue: propertyValue.type === "select" ? propertyValue.select?.name : null,
+            hasSelectName: propertyValue.type === "select" && !!propertyValue.select?.name,
+            selectName: propertyValue.type === "select" ? propertyValue.select?.name : null,
+          })
+        } else {
+          stagePropertyInfo.push({
+            itemId: item.id,
+            error: "stage 또는 단계 속성을 찾을 수 없음",
+            availableProperties: Object.keys(item.properties),
+          })
         }
       }
     }
@@ -124,6 +96,19 @@ export async function GET() {
       firstItemProperties,
       stagePropertyInfo,
       sample: data.results.length > 0 ? data.results[0] : null,
+      // 원본 데이터 전체를 포함 (최대 3개 항목만)
+      rawResults: data.results.slice(0, 3).map((item) => ({
+        id: item.id,
+        properties: Object.fromEntries(
+          Object.entries(item.properties).map(([key, value]) => {
+            // 속성 이름을 소문자로 변환하여 비교
+            const lowerKey = key.toLowerCase()
+            // stage 또는 단계 관련 속성에 표시 추가
+            const isStageRelated = lowerKey === "stage" || lowerKey === "단계"
+            return [key + (isStageRelated ? " (STAGE 관련)" : ""), value]
+          }),
+        ),
+      })),
     })
   } catch (error) {
     console.error("Notion API 디버그 테스트 오류:", error)

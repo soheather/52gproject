@@ -137,26 +137,14 @@ export async function fetchNotionData(options: { forceRefresh?: boolean; databas
           data.results = data.results.map((item) => {
             // 단계 속성 값 추출 - 더 명확한 방식으로 수정
             const stageValue = (() => {
-              // 1. 먼저 정확히 "stage" 속성 확인
-              if (item.properties["stage"]?.select?.name) {
-                console.log(`항목 ID: ${item.id}, stage 속성 값: ${item.properties["stage"].select.name}`)
-                return item.properties["stage"].select.name
-              }
-              // 2. 다음으로 "단계" 속성 확인
-              else if (item.properties["단계"]?.select?.name) {
-                console.log(`항목 ID: ${item.id}, 단계 속성 값: ${item.properties["단계"].select.name}`)
-                return item.properties["단계"].select.name
-              }
-              // 3. 대소문자 구분 없이 찾기
-              else {
-                const stageKey = Object.keys(item.properties).find(
-                  (key) => key.toLowerCase() === "stage" || key.toLowerCase() === "단계",
-                )
+              // 새로운 방식으로 단계 값 추출
+              const 단계값 =
+                Object.entries(item.properties).find(([key]) => key === "단계" || key.toLowerCase() === "stage")?.[1]
+                  ?.select?.name ?? null
 
-                if (stageKey && item.properties[stageKey]?.select?.name) {
-                  console.log(`항목 ID: ${item.id}, ${stageKey} 속성 값: ${item.properties[stageKey].select.name}`)
-                  return item.properties[stageKey].select.name
-                }
+              if (단계값) {
+                console.log(`항목 ID: ${item.id}, 단계 값 추출 성공: ${단계값}`)
+                return 단계값
               }
 
               console.log(`항목 ID: ${item.id}, 단계 속성 값을 찾을 수 없음`)
