@@ -63,6 +63,13 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
   // 상태 변수 추가
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
+  // 테이블 렌더링 최적화: 가상화 적용을 위한 준비
+  // 테이블 데이터를 페이징 처리하여 한 번에 표시할 항목 수 제한
+
+  // 페이징 관련 상태 추가
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(20) // 한 페이지당 표시할 항목 수
+
   // 카드 클릭 핸들러 함수를 수정합니다:
   const handleCategoryClick = (category: string) => {
     // 이미 활성화된 카테고리를 다시 클릭하면 닫히도록 토글 기능 추가
@@ -124,74 +131,31 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
 
         // 수정된 코드:
         const stageValue = (() => {
-          // 모든 속성 이름과 값을 로깅하여 디버깅
-          console.log(`항목 ID: ${item.id}, 모든 속성 이름:`, Object.keys(item.properties))
-
           // 1. 정확한 속성 이름으로 직접 찾기
-          const exactMatch = Object.entries(item.properties).find(([key]) => key === "단계" || key === "stage")
+          if (item.properties["단계"]?.select?.name) {
+            return item.properties["단계"].select.name
+          }
 
-          if (exactMatch) {
-            const [key, value] = exactMatch
-            console.log(`항목 ID: ${item.id}, 정확한 속성 찾음: ${key}`, value)
+          if (item.properties["stage"]?.select?.name) {
+            return item.properties["stage"].select.name
+          }
 
-            if (value.type === "select" && value.select?.name) {
-              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
+          // 2. 대소문자 구분 없이 찾기 - 최적화된 방식
+          for (const [key, value] of Object.entries(item.properties)) {
+            if (
+              (key.toLowerCase() === "단계" || key.toLowerCase() === "stage") &&
+              value.type === "select" &&
+              value.select?.name
+            ) {
               return value.select.name
             }
           }
 
-          // 2. 대소문자 구분 없이 찾기
-          const caseInsensitiveMatch = Object.entries(item.properties).find(
-            ([key]) => key.toLowerCase() === "단계" || key.toLowerCase() === "stage",
-          )
-
-          if (caseInsensitiveMatch) {
-            const [key, value] = caseInsensitiveMatch
-            console.log(`항목 ID: ${item.id}, 대소문자 구분 없이 속성 찾음: ${key}`, value)
-
-            if (value.type === "select" && value.select?.name) {
-              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
-              return value.select.name
-            }
-          }
-
-          // 3. 유사한 속성 이름 찾기 (추가 검색)
-          const similarMatch = Object.entries(item.properties).find(
-            ([key]) =>
-              key.toLowerCase().includes("단계") ||
-              key.toLowerCase().includes("stage") ||
-              key.toLowerCase().includes("상태") ||
-              key.toLowerCase().includes("status"),
-          )
-
-          if (similarMatch) {
-            const [key, value] = similarMatch
-            console.log(`항목 ID: ${item.id}, 유사한 속성 찾음: ${key}`, value)
-
-            if (value.type === "select" && value.select?.name) {
-              console.log(`항목 ID: ${item.id}, ${key} 속성 값: ${value.select.name}`)
-              return value.select.name
-            }
-          }
-
-          // 4. 모든 select 타입 속성 확인
-          const allSelectProperties = Object.entries(item.properties).filter(
-            ([_, value]) => value.type === "select" && value.select?.name,
-          )
-
-          if (allSelectProperties.length > 0) {
-            console.log(
-              `항목 ID: ${item.id}, 모든 select 타입 속성:`,
-              allSelectProperties.map(([key, value]) => `${key}: ${value.select.name}`).join(", "),
-            )
-          }
-
-          console.log(`항목 ID: ${item.id}, 단계 속성 값을 찾을 수 없음`)
           return "-"
         })()
 
         // 디버깅 로그 추가
-        console.log(`항목 ID: ${item.id}, 단계 값: ${stageValue}`)
+        // console.log(`항목 ID: ${item.id}, 단계 값: ${stageValue}`)
 
         return {
           id: item.id || `id-${Math.random().toString(36).substr(2, 9)}`,
@@ -213,11 +177,11 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
       })
 
       setProjects(processedData)
-      console.log(`프로젝트 데이터 처리 완료: ${processedData.length}개 항목`)
+      // console.log(`프로젝트 데이터 처리 완료: ${processedData.length}개 항목}`)
 
       // 단계 값 로깅
-      const stageValues = processedData.map((p) => p.stage).filter((s) => s !== "-")
-      console.log("단계 값 목록:", stageValues)
+      // const stageValues = processedData.map((p) => p.stage).filter((s) => s !== "-")
+      // console.log("단계 값 목록:", stageValues)
     } catch (error) {
       console.error("프로젝트 데이터 처리 오류:", error)
       setError(`데이터 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`)
@@ -338,7 +302,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
           Object.entries(item.properties).find(([key]) => key === "단계" || key.toLowerCase() === "stage")?.[1]?.select
             ?.name ?? "-"
 
-        console.log(`항목 ID: ${item.id}, 단계 값 추출 결과: ${단계값}`)
+        // console.log(`항목 ID: ${item.id}, 단계 값 추출 결과: ${단계값}`)
         return 단계값
       }
 
@@ -358,9 +322,9 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
       // 속성 추출 헬퍼 함수 (내부 함수로 분리)
       function extractPropertyValueByType(property) {
         // 디버깅 로그 추가
-        if (propertyName.toLowerCase() === "stage" || propertyName === "단계") {
-          console.log(`단계 속성 데이터:`, JSON.stringify(property, null, 2))
-        }
+        // if (propertyName.toLowerCase() === "stage" || propertyName === "단계") {
+        //   console.log(`단계 속성 데이터:`, JSON.stringify(property, null, 2))
+        // }
 
         // 속성 타입에 따라 값 추출
         switch (property.type) {
@@ -667,6 +631,21 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
     return value ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-gray-300" />
   }
 
+  // 정렬된 프로젝트 목록을 메모이제이션
+  const sortedProjects = useMemo(() => getSortedProjects(), [projects, searchTerm, sortConfig])
+
+  // 페이징된 데이터 계산
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return sortedProjects.slice(startIndex, startIndex + itemsPerPage)
+  }, [sortedProjects, currentPage, itemsPerPage])
+
+  // 총 페이지 수 계산
+  const totalPages = useMemo(() => Math.ceil(sortedProjects.length / itemsPerPage), [sortedProjects, itemsPerPage])
+
+  // 프로젝트 단계 분포 데이터를 메모이제이션
+  const stageDistributionData = useMemo(() => getProjectStageDistribution(), [projectStats])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-xl shadow-sm">
@@ -726,7 +705,7 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
   }
 
   // 프로젝트 단계 분포 데이터 가져오기
-  const stageDistributionData = getProjectStageDistribution()
+  // const stageDistributionData = getProjectStageDistribution()
 
   return (
     <div className="space-y-6">
@@ -1104,8 +1083,8 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {getSortedProjects().length > 0 ? (
-                getSortedProjects().map((project) => (
+              {paginatedProjects.length > 0 ? (
+                paginatedProjects.map((project) => (
                   <TableRow key={project.id} className="group hover:bg-[#f8f8fc] transition-colors">
                     <TableCell className="font-medium text-[#2d2d3d]">{project.title}</TableCell>
                     <TableCell>{getStatusBadge(project.status)}</TableCell>
@@ -1160,9 +1139,36 @@ export default function ProjectsList2025({ notionData }: { notionData: any }) {
             </TableBody>
           </Table>
         </div>
-        <div className="p-5 border-t border-[#f0f0f5] text-sm text-[#6e6e85] bg-[#f8f8fc]">
-          총 {getSortedProjects().length}개 프로젝트 (전체 {projects.length}개 중)
-          {lastUpdated && <span className="ml-4">최근 업데이트: {lastUpdated}</span>}
+        <div className="flex items-center justify-between p-5 border-t border-[#f0f0f5] text-sm text-[#6e6e85] bg-[#f8f8fc]">
+          <div className="flex justify-between items-center">
+            <div>
+              총 {sortedProjects.length}개 프로젝트 (전체 {projects.length}개 중)
+              {lastUpdated && <span className="ml-4">최근 업데이트: {lastUpdated}</span>}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  이전
+                </Button>
+                <span>
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  다음
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

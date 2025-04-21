@@ -6,8 +6,9 @@ import { AlertTriangle } from "lucide-react"
 // 상단에 RefreshProjectsButton import 추가
 import { RefreshProjectsButton } from "@/components/refresh-projects-button"
 
+// 수정된 코드:
 export const dynamic = "force-dynamic"
-export const revalidate = 0 // 항상 최신 데이터 가져오기
+export const revalidate = 300 // 5분마다 재검증
 
 export default async function ProjectsPage() {
   try {

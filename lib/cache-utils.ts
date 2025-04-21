@@ -4,7 +4,7 @@
 const CACHE: Record<string, { data: any; timestamp: number }> = {}
 
 // 캐시 만료 시간 (5분)
-const CACHE_EXPIRY = 5 * 60 * 1000
+const CACHE_EXPIRY = 30 * 60 * 1000
 
 /**
  * 데이터를 캐시하고 가져오는 함수
