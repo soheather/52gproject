@@ -11,6 +11,7 @@ import { MakeStackedChart } from "./make-stacked-chart"
 import { Loader2, BarChart3, LineChart, Bell, Users, Code, Layers, AlertTriangle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { fetchNotionData } from "@/app/actions/notion"
+import { MockDashboard } from "./mock-dashboard"
 
 // Import the COLORS constant from StatusDonutChart
 import { COLORS as DONUT_COLORS } from "./status-donut-chart"
@@ -193,19 +194,31 @@ export default function Dashboard({ notionData }: { notionData: any }) {
             </li>
           </ul>
         </div>
-        <Button onClick={refreshData} disabled={refreshing} className="mt-4 bg-[#a5a6f6] hover:bg-[#8384f3] text-white">
-          {refreshing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              새로고침 중...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              데이터 새로고침
-            </>
-          )}
-        </Button>
+        <div className="mt-6">
+          <h4 className="font-medium text-[#c44f6a] mb-2">샘플 데이터 보기</h4>
+          <p className="text-[#c44f6a] text-sm mb-4">API 연결 문제가 해결될 때까지 샘플 데이터를 확인할 수 있습니다.</p>
+          <Button
+            onClick={refreshData}
+            className="mt-2 bg-[#a5a6f6] hover:bg-[#8384f3] text-white"
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                새로고침 중...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                데이터 새로고침
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="mt-8 border-t border-[#ffc2d1] pt-6">
+          <MockDashboard onRefresh={refreshData} />
+        </div>
       </div>
     )
   }
@@ -234,6 +247,10 @@ export default function Dashboard({ notionData }: { notionData: any }) {
             </>
           )}
         </Button>
+
+        <div className="mt-8 border-t border-[#ffe7a0] pt-6">
+          <MockDashboard onRefresh={refreshData} />
+        </div>
       </div>
     )
   }

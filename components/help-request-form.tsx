@@ -5,8 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, HelpCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { getEmojiForContent } from "@/lib/emoji-helper"
 import { useToast } from "@/hooks/use-toast"
 import { supabase, HELP_REQUESTS_TABLE, ensureHelpRequestsTable } from "@/lib/supabase"
@@ -102,43 +101,33 @@ export function HelpRequestForm() {
     }
   }
 
-  // 폼 컴포넌트의 색상을 새 팔레트에 맞게 업데이트
   return (
-    <Card className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <HelpCircle className="h-5 w-5 text-[#6366f1]" />
-          <h3 className="text-lg font-medium text-[#2d2d2d]">도움이 필요하신가요?</h3>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <form onSubmit={handleSubmit} className="p-4">
+        <Textarea
+          placeholder="어떤 도움이 필요하신가요?"
+          className="min-h-[150px] resize-y border-gray-200 focus:border-[#6366f1] focus:ring-[#6366f1] rounded-lg text-base"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          disabled={isSubmitting || !isTableReady}
+        />
+        <div className="flex justify-end mt-4">
+          <Button
+            type="submit"
+            className="bg-[#6366f1] hover:bg-[#5258e0] text-white transition-colors rounded-md px-6"
+            disabled={isSubmitting || !isTableReady}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                등록 중...
+              </>
+            ) : (
+              "남기기"
+            )}
+          </Button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Textarea
-              placeholder="어떤 도움이 필요하신가요? 자세히 설명해주세요."
-              className="min-h-[120px] resize-y border-gray-300 focus:border-[#6366f1] focus:ring-[#6366f1] rounded-lg"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              disabled={isSubmitting || !isTableReady}
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              className="bg-[#6366f1] hover:bg-[#5258e0] text-white transition-colors"
-              disabled={isSubmitting || !isTableReady}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  등록 중...
-                </>
-              ) : (
-                "남기기"
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      </form>
+    </div>
   )
 }

@@ -41,14 +41,21 @@ export async function fetchWithCache<T>(
     console.log(`데이터 캐싱 완료 - 키: ${key}`)
     return data
   } catch (error) {
+    console.error(`fetchWithCache 오류 - 키: ${key}:`, error)
+
     // 에러 발생 시 캐시된 데이터가 있으면 반환 (오래된 데이터라도 보여주기)
     if (cachedData) {
       console.warn(`오류 발생, 캐시된 데이터 사용 - 키: ${key}`, error)
       return cachedData.data
     }
 
+    // 캐시된 데이터가 없으면 기본 데이터 반환
     console.error(`오류 발생, 캐시된 데이터 없음 - 키: ${key}`, error)
-    throw error
+    return {
+      results: [],
+      error: `데이터를 가져오는 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
+      timestamp: new Date().toISOString(),
+    } as any as T
   }
 }
 

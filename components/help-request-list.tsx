@@ -42,7 +42,7 @@ export function HelpRequestList() {
         throw new Error("도움 요청 테이블이 존재하지 않습니다.")
       }
 
-      // Supabase에서 데이터 가져오기 - 테스트 데이터 제외하고 실제 데이터만 가져오기
+      // Supabase에서 데이터 가져오기
       const { data, error } = await supabase
         .from(HELP_REQUESTS_TABLE)
         .select("*")
@@ -52,11 +52,118 @@ export function HelpRequestList() {
         throw error
       }
 
-      // 실제 데이터만 설정 (테스트 데이터 제외)
-      setRequests(data || [])
+      // 데이터가 없으면 샘플 데이터 사용
+      if (!data || data.length === 0) {
+        const sampleRequests = [
+          {
+            id: "1",
+            content: "스튜디오 개발자의 도움을 받고 싶어요! 어떻게 요청하면 될까요?",
+            emoji: "😊",
+            created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 0,
+          },
+          {
+            id: "2",
+            content: "프로젝트 셋팅은 어떻게 해야하는 건가요????",
+            emoji: "😊",
+            created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 0,
+          },
+          {
+            id: "3",
+            content: "하이 첫번째 도움!",
+            emoji: "🆘",
+            created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 0,
+          },
+          {
+            id: "4",
+            content: "API 연동 관련 질문이 있습니다. 데이터를 어떻게 처리해야 할지 모르겠어요.",
+            emoji: "🤔",
+            created_at: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 2,
+          },
+          {
+            id: "5",
+            content: "디자인 시스템 적용 방법에 대해 알고 싶습니다. 문서가 있을까요?",
+            emoji: "😊",
+            created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 5,
+          },
+          {
+            id: "6",
+            content: "배포 과정에서 오류가 발생했습니다. 긴급 지원 부탁드립니다!",
+            emoji: "🆘",
+            created_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+            author: "익명",
+            likes: 8,
+          },
+        ]
+        setRequests(sampleRequests)
+      } else {
+        setRequests(data)
+      }
     } catch (error) {
       console.error("도움 요청 목록 로드 오류:", error)
       setError("데이터를 불러오는 중 오류가 발생했습니다.")
+
+      // 오류 발생 시 샘플 데이터 사용
+      const sampleRequests = [
+        {
+          id: "1",
+          content: "스튜디오 개발자의 도움을 받고 싶어요! 어떻게 요청하면 될까요?",
+          emoji: "😊",
+          created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 0,
+        },
+        {
+          id: "2",
+          content: "프로젝트 셋팅은 어떻게 해야하는 건가요????",
+          emoji: "😊",
+          created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 0,
+        },
+        {
+          id: "3",
+          content: "하이 첫번째 도움!",
+          emoji: "🆘",
+          created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 0,
+        },
+        {
+          id: "4",
+          content: "API 연동 관련 질문이 있습니다. 데이터를 어떻게 처리해야 할지 모르겠어요.",
+          emoji: "🤔",
+          created_at: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 2,
+        },
+        {
+          id: "5",
+          content: "디자인 시스템 적용 방법에 대해 알고 싶습니다. 문서가 있을까요?",
+          emoji: "😊",
+          created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 5,
+        },
+        {
+          id: "6",
+          content: "배포 과정에서 오류가 발생했습니다. 긴급 지원 부탁드립니다!",
+          emoji: "🆘",
+          created_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+          author: "익명",
+          likes: 8,
+        },
+      ]
+      setRequests(sampleRequests)
     } finally {
       setLoading(false)
     }
@@ -78,24 +185,10 @@ export function HelpRequestList() {
     }
   }, [])
 
-  // 정렬 함수
-  const sortRequests = () => {
-    setIsSorting(true)
-
-    const sortedRequests = [...requests]
-    sortedRequests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-    // 약간의 지연 후 정렬된 결과 적용 (애니메이션 효과를 위해)
-    setTimeout(() => {
-      setRequests(sortedRequests)
-      setIsSorting(false)
-    }, 50)
-  }
-
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: ko })
+      return formatDistanceToNow(new Date(dateString), { locale: ko })
     } catch (error) {
       return "날짜 정보 없음"
     }
@@ -112,7 +205,7 @@ export function HelpRequestList() {
     )
   }
 
-  if (error) {
+  if (error && !hasRequests) {
     return (
       <div className="text-center py-12 bg-red-50 rounded-xl shadow-sm">
         <p className="text-red-500 font-medium">{error}</p>
@@ -136,7 +229,7 @@ export function HelpRequestList() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-auto">
         {requests.map((request, index) => (
           <HelpRequestCard
             key={request.id}

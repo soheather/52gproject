@@ -27,20 +27,20 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
   const [requestNumber, setRequestNumber] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
-  // 카드 색상 배열을 이미지의 색상으로 변경
+  // 카드 색상 배열 - 이미지에 맞게 조정
   const cardColors = [
-    "bg-[#6366f1] text-white", // 보라색/파란색 (Frame 34442)
-    "bg-[#2092FB] text-white", // 파란색 (요청에 따라 변경됨)
-    "bg-[#38C68E] text-white", // 녹색 (요청에 따라 변경됨)
-    "bg-[#2d2d2d] text-white", // 검정색/다크 그레이 (Frame 34445)
+    "bg-[#c1f0d9] text-[#2d2d3d]", // 민트색 (밝은 배경)
+    "bg-[#1e2432] text-white", // 네이비 (어두운 배경)
+    "bg-[#c1f0d9] text-[#2d2d3d]", // 민트색 (밝은 배경)
+    "bg-[#1e2432] text-white", // 네이비 (어두운 배경)
   ]
 
-  // 카드 호버 효과 색상도 업데이트
+  // 카드 호버 효과 색상
   const hoverEffects = [
-    "hover:bg-[#5258e0]", // 보라색/파란색 호버
-    "hover:bg-[#1a7fe0]", // 파란색 호버 (요청에 따라 변경됨)
-    "hover:bg-[#2fb77e]", // 녹색 호버 (요청에 따라 변경됨)
-    "hover:bg-[#1f1f1f]", // 검정색/다크 그레이 호버
+    "hover:bg-[#b1e6c9]", // 민트색 호버
+    "hover:bg-[#161c27]", // 네이비 호버
+    "hover:bg-[#b1e6c9]", // 민트색 호버
+    "hover:bg-[#161c27]", // 네이비 호버
   ]
 
   // 내용 길이에 따라 카드 크기 결정 (내용이 길면 span-2)
@@ -62,9 +62,9 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
   const colorIndex = getColorIndex()
   const cardColor = cardColors[colorIndex]
   const hoverEffect = hoverEffects[colorIndex]
+  const isDarkBackground = colorIndex % 2 === 1 // 홀수 인덱스는 어두운 배경
 
   // 요청 번호 계산
-  // 요청 번호 계산 - 서버에서 가져온 실제 순서 사용
   useEffect(() => {
     const getRequestNumber = async () => {
       try {
@@ -144,8 +144,26 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
     }
   }
 
-  // 좋아요 버튼 색상 - 색상 계열에 맞게 조정
-  const likeButtonColor = liked ? (colorIndex <= 1 ? "text-yellow-300" : "text-white") : "opacity-70"
+  // 좋아요 버튼 색상
+  const likeButtonColor = isDarkBackground
+    ? liked
+      ? "text-white"
+      : "text-white opacity-70"
+    : liked
+      ? "text-[#6366f1]"
+      : "text-[#6e6e85] opacity-70"
+
+  // 이모지 표시 - SOS 특별 처리
+  const displayEmoji =
+    request.emoji === "🆘" ? (
+      <div className="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold">
+        SOS
+      </div>
+    ) : (
+      <div className="bg-yellow-100 rounded-full w-10 h-10 flex items-center justify-center text-2xl">
+        {request.emoji}
+      </div>
+    )
 
   return (
     <div
@@ -158,28 +176,32 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
         transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-5 flex flex-col h-full">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="text-3xl">{request.emoji}</div>
-            <div className="text-xs opacity-80 font-bold">{requestNumber}번째 요청</div>
+            {displayEmoji}
+            <div className="text-sm font-medium">{requestNumber}일째 요청</div>
           </div>
 
-          {/* 좋아요 버튼을 상단으로 이동 */}
-          <button
-            className={`flex items-center gap-1 ${likeButtonColor} px-2 py-1 rounded-full bg-black bg-opacity-10 hover:bg-opacity-20 transition-all duration-200`}
-            onClick={handleLike}
-          >
-            <ThumbsUp className="h-3 w-3" />
-            <span className="text-xs font-medium">{likes}</span>
-          </button>
+          {/* 좋아요 버튼 */}
+          <div className="flex items-center gap-1">
+            <button
+              className={`flex items-center gap-1 ${likeButtonColor} transition-all duration-200`}
+              onClick={handleLike}
+            >
+              <ThumbsUp className="h-5 w-5" />
+              <span className="text-sm font-medium">{likes}</span>
+            </button>
+          </div>
         </div>
 
-        <p className="flex-grow mb-4 whitespace-pre-wrap text-sm leading-relaxed font-medium">{request.content}</p>
+        <p className="flex-grow mb-4 whitespace-pre-wrap text-base leading-relaxed">{request.content}</p>
 
-        <div className="flex justify-end items-center text-xs opacity-80 mt-auto pt-2 border-t border-white border-opacity-20">
+        <div className="flex justify-end items-center text-sm mt-auto pt-2">
           <div className="flex items-center gap-2">
-            <span className="font-bold">{formatDate(request.created_at)}</span>
+            <span className={isDarkBackground ? "text-gray-300" : "text-gray-500"}>
+              약 {formatDate(request.created_at)}
+            </span>
           </div>
         </div>
       </div>
