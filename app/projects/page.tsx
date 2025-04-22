@@ -2,7 +2,7 @@ import { fetchNotionData } from "@/app/actions/notion"
 import ProjectsList2025 from "@/components/projects-list-2025"
 import { Suspense } from "react"
 import Loading from "./loading"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, BarChart3, CheckCircle2, Clock, ListChecks } from "lucide-react"
 // 상단에 RefreshProjectsButton import 추가
 import { RefreshProjectsButton } from "@/components/refresh-projects-button"
 
@@ -13,9 +13,10 @@ export default async function ProjectsPage() {
   try {
     // 환경변수 검증
     const projectsDbId = process.env.NOTION_DATABASE_ID_PROJECTS
+    const apiKey = process.env.NOTION_API_KEY
 
-    if (!projectsDbId) {
-      console.error("❌ NOTION_DATABASE_ID_PROJECTS 환경변수가 설정되지 않았습니다.")
+    if (!apiKey || !projectsDbId) {
+      console.error("❌ 필요한 환경변수가 설정되지 않았습니다.")
       return (
         <main className="py-8 px-6 sm:px-8 lg:px-10">
           <div className="max-w-7xl mx-auto">
@@ -29,14 +30,62 @@ export default async function ProjectsPage() {
                 <h3 className="text-[#c44f6a] text-lg font-medium">환경변수 오류</h3>
               </div>
               <p className="text-[#c44f6a] mb-4">
-                NOTION_DATABASE_ID_PROJECTS 환경변수가 설정되지 않았습니다. .env.local 파일에 환경변수를 추가하고 서버를
-                재시작해주세요.
+                {!apiKey ? "NOTION_API_KEY" : "NOTION_DATABASE_ID_PROJECTS"} 환경변수가 설정되지 않았습니다. .env.local
+                파일에 환경변수를 추가하고 서버를 재시작해주세요.
               </p>
               <div className="bg-white bg-opacity-50 p-4 rounded-md text-[#c44f6a] text-sm">
                 <p className="font-medium mb-2">다음과 같이 환경변수를 설정해주세요:</p>
                 <pre className="bg-[#ffc2d1] bg-opacity-30 p-2 rounded overflow-x-auto">
-                  NOTION_DATABASE_ID_PROJECTS=your_database_id_here
+                  NOTION_API_KEY=your_api_key_here NOTION_DATABASE_ID_PROJECTS=your_database_id_here
                 </pre>
+              </div>
+            </div>
+
+            {/* Show mock data or placeholder */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <h3 className="text-lg font-medium text-[#4b4b63] mb-4">샘플 프로젝트 데이터</h3>
+              <p className="text-[#6e6e85] mb-6">환경 변수가 설정되지 않아 샘플 데이터를 표시합니다.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                  <div className="rounded-full bg-[#f0f0ff] p-3 mr-4">
+                    <BarChart3 className="h-6 w-6 text-[#7b7bf7]" />
+                  </div>
+                  <div>
+                    <p className="text-[#6e6e85] text-sm">전체 프로젝트</p>
+                    <p className="text-2xl font-bold text-[#2d2d3d]">15개</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                  <div className="rounded-full bg-[#fff2c4] bg-opacity-50 p-3 mr-4">
+                    <Clock className="h-6 w-6 text-[#a17f22]" />
+                  </div>
+                  <div>
+                    <p className="text-[#6e6e85] text-sm">진행보류/후보/확정</p>
+                    <p className="text-2xl font-bold text-[#2d2d3d]">5개</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                  <div className="rounded-full bg-[#c5e8ff] bg-opacity-50 p-3 mr-4">
+                    <ListChecks className="h-6 w-6 text-[#3a6ea5]" />
+                  </div>
+                  <div>
+                    <p className="text-[#6e6e85] text-sm">진행중</p>
+                    <p className="text-2xl font-bold text-[#2d2d3d]">7개</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                  <div className="rounded-full bg-[#e1f5c4] bg-opacity-50 p-3 mr-4">
+                    <CheckCircle2 className="h-6 w-6 text-[#5a7052]" />
+                  </div>
+                  <div>
+                    <p className="text-[#6e6e85] text-sm">진행완료</p>
+                    <p className="text-2xl font-bold text-[#2d2d3d]">3개</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

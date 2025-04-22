@@ -24,6 +24,7 @@ export async function fetchNotionData(options: { forceRefresh?: boolean; databas
     return {
       results: [],
       error: "NOTION_API_KEY 환경변수가 설정되지 않았습니다. 환경변수를 확인해주세요.",
+      useMockData: true, // Add flag to indicate mock data should be used
     }
   }
 
@@ -32,6 +33,7 @@ export async function fetchNotionData(options: { forceRefresh?: boolean; databas
     return {
       results: [],
       error: "데이터베이스 ID가 제공되지 않았습니다. 올바른 데이터베이스 ID를 전달해주세요.",
+      useMockData: true, // Add flag to indicate mock data should be used
     }
   }
 

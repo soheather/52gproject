@@ -102,6 +102,63 @@ export default function Dashboard({ notionData }: { notionData: any }) {
         return
       }
 
+      // Check if we should use mock data
+      if (notionData?.useMockData) {
+        console.log("환경 변수 오류로 인해 목업 데이터를 사용합니다.")
+        // Set mock data
+        setProcessedData({
+          statusData: [
+            { name: "사용", value: 25 },
+            { name: "미사용", value: 10 },
+            { name: "개발중", value: 8 },
+            { name: "검토중", value: 5 },
+          ],
+          metricsData: [
+            { name: "있음", value: 20 },
+            { name: "없음", value: 28 },
+          ],
+          metricsMonitoringData: [
+            { name: "정기", value: 15 },
+            { name: "비정기", value: 5 },
+            { name: "없음", value: 28 },
+          ],
+          monitoringData: [
+            { name: "있음", value: 20 },
+            { name: "없음", value: 28 },
+          ],
+          poData: [
+            { name: "현업/사내 IT팀", value: 18 },
+            { name: "52g 직단위원", value: 12 },
+            { name: "없음", value: 18 },
+          ],
+          swData: [
+            { name: "사내IT팀", value: 15 },
+            { name: "파트너", value: 10 },
+            { name: "크루(NOCODE)", value: 8 },
+            { name: "현업(NOCODE)", value: 5 },
+            { name: "52g 스튜디오", value: 7 },
+            { name: "미사용", value: 3 },
+          ],
+          totalCount: 48,
+          activeCount: 25,
+          metricsCount: 20,
+          assignedCount: 30,
+        })
+
+        // Set mock make data
+        setMakeData([
+          { id: "1", make: "사내IT팀" },
+          { id: "2", make: "파트너" },
+          { id: "3", make: "크루(NOCODE)" },
+          { id: "4", make: "현업(NOCODE)" },
+          { id: "5", make: "52g 스튜디오" },
+          { id: "6", make: "미사용" },
+        ])
+
+        setLoading(false)
+        return
+      }
+
       // 데이터 처리 및 상태 업데이트
       processDataAndUpdate(notionData)
     } catch (err) {

@@ -1,7 +1,7 @@
 import type React from "react"
 import "./globals.css"
-import { Sidebar } from "@/components/sidebar"
 import { AuthProvider } from "@/contexts/auth-context"
+import { TopNavbar } from "@/components/top-navbar"
 
 export default function RootLayout({
   children,
@@ -12,9 +12,9 @@ export default function RootLayout({
     <html lang="ko">
       <body>
         <AuthProvider>
-          <div className="flex min-h-screen bg-[#f0f5f5]">
-            <Sidebar />
-            <div className="flex-1 overflow-x-hidden">{children}</div>
+          <div className="flex flex-col min-h-screen bg-[#f0f5f5]">
+            <TopNavbar />
+            <div className="flex-1 overflow-x-hidden pt-4">{children}</div>
           </div>
         </AuthProvider>
       </body>

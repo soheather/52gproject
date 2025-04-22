@@ -89,36 +89,3 @@ function MenuItemHorizontal({
     </li>
   )
 }
-
-// Keep the original Sidebar component for backward compatibility
-export function Sidebar() {
-  return <TopNavbar />
-}
-
-function MenuItem({
-  icon,
-  title,
-  href,
-  active = false,
-  collapsed = false,
-}: {
-  icon: React.ReactNode
-  title: string
-  href: string
-  active?: boolean
-  collapsed?: boolean
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className={`flex items-center p-3 rounded-lg transition-colors ${
-          active ? "bg-[#f0f0ff] text-[#7b7bf7]" : "text-[#6e6e85] hover:bg-[#f8f8fc]"
-        }`}
-      >
-        <div className={`${collapsed ? "mx-auto" : ""}`}>{icon}</div>
-        {!collapsed && <span className="ml-3 font-medium">{title}</span>}
-      </Link>
-    </li>
-  )
-}

@@ -1,5 +1,6 @@
 import { fetchNotionData } from "@/app/actions/notion"
 import Dashboard from "@/components/dashboard"
+import { MockDashboard } from "@/components/mock-dashboard" // Import MockDashboard
 import { Suspense } from "react"
 import Loading from "./loading"
 import { AlertTriangle } from "lucide-react"
@@ -13,6 +14,47 @@ export default async function Home() {
     console.log("환경 변수 확인:")
     console.log("NOTION_API_KEY 설정됨:", !!process.env.NOTION_API_KEY)
     console.log("NOTION_DATABASE_ID_SERVICES 설정됨:", !!process.env.NOTION_DATABASE_ID_SERVICES)
+
+    // Check if environment variables are set
+    if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID_SERVICES) {
+      console.log("환경 변수가 설정되지 않았습니다. 목업 데이터를 사용합니다.")
+      return (
+        <main className="py-8 px-6 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-[#2d2d3d]">디지털 서비스 현황</h1>
+              <p className="text-[#6e6e85] mt-1">Notion API 기반 실시간 대시보드</p>
+            </div>
+            <div className="bg-[#ffd6e0] border border-[#ffc2d1] rounded-lg p-6 mb-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="h-6 w-6 text-[#c44f6a] mr-2" />
+                <h3 className="text-[#c44f6a] text-lg font-medium">환경 변수 설정 필요</h3>
+              </div>
+              <p className="text-[#c44f6a] mb-4">
+                Notion API 연동을 위한 환경 변수가 설정되지 않았습니다. 아래 환경 변수를 설정해주세요:
+              </p>
+              <div className="bg-white bg-opacity-50 p-4 rounded-md text-[#c44f6a] text-sm">
+                <p className="font-medium mb-2">필요한 환경 변수:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>
+                    <code className="bg-[#ffc2d1] px-1 rounded">NOTION_API_KEY</code>: Notion API 키
+                  </li>
+                  <li>
+                    <code className="bg-[#ffc2d1] px-1 rounded">NOTION_DATABASE_ID_SERVICES</code>: 서비스 데이터베이스
+                    ID
+                  </li>
+                  <li>
+                    <code className="bg-[#ffc2d1] px-1 rounded">NOTION_DATABASE_ID_PROJECTS</code>: 프로젝트
+                    데이터베이스 ID
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <MockDashboard />
+          </div>
+        </main>
+      )
+    }
 
     // 서비스 데이터베이스 ID를 사용하여 Notion 데이터 가져오기
     const notionData = await fetchNotionData({
@@ -56,6 +98,7 @@ export default async function Home() {
                 </ul>
               </div>
             </div>
+            <MockDashboard />
           </div>
         </main>
       )
@@ -99,6 +142,7 @@ export default async function Home() {
               오류 내용: {error instanceof Error ? error.message : String(error)}
             </p>
           </div>
+          <MockDashboard />
         </div>
       </main>
     )
