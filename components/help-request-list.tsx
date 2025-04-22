@@ -229,7 +229,8 @@ export function HelpRequestList() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-auto">
+      {/* 여기서 그리드를 3개 열로 변경 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto">
         {requests.map((request, index) => (
           <HelpRequestCard
             key={request.id}

@@ -106,7 +106,7 @@ export function HelpRequestForm() {
       <form onSubmit={handleSubmit} className="p-4">
         <Textarea
           placeholder="어떤 도움이 필요하신가요?"
-          className="min-h-[150px] resize-y border-gray-200 focus:border-[#6366f1] focus:ring-[#6366f1] rounded-lg text-base"
+          className="min-h-[200px] resize-y border-gray-200 focus:border-[#6366f1] focus:ring-[#6366f1] rounded-lg text-base"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={isSubmitting || !isTableReady}

@@ -43,9 +43,9 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
     "hover:bg-[#161c27]", // 네이비 호버
   ]
 
-  // 내용 길이에 따라 카드 크기 결정 (내용이 길면 span-2)
-  const isLongContent = request.content.length > 100
-  const cardSize = isLongContent ? "col-span-1 md:col-span-2" : "col-span-1"
+  // 내용 길이에 따른 카드 크기 결정 제거 - 모든 카드가 동일한 크기를 갖도록 함
+  // const isLongContent = request.content.length > 100
+  // const cardSize = isLongContent ? "col-span-1 md:col-span-2" : "col-span-1"
 
   // ID 기반으로 색상 선택 (고유한 색상 유지)
   const getColorIndex = () => {
@@ -167,7 +167,7 @@ export function HelpRequestCard({ request, formatDate, index, isSorting }: HelpR
 
   return (
     <div
-      className={`${cardSize} rounded-xl shadow-sm overflow-hidden ${cardColor} ${hoverEffect} transition-all duration-300 hover:shadow-md transform ${
+      className={`rounded-xl shadow-sm overflow-hidden ${cardColor} ${hoverEffect} transition-all duration-300 hover:shadow-md transform ${
         isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
       }`}
       style={{
